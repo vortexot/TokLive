@@ -35,7 +35,7 @@ export function ProgressBar({
 export function Delta({ value }: { value: number }) {
   if (value === 0) {
     return (
-      <span className="delta delta--flat" aria-label="Sem mudança de posição">
+      <span className="delta delta--flat" role="img" aria-label="Sem mudança de posição">
         <Minus size={14} aria-hidden />
       </span>
     );
@@ -43,7 +43,7 @@ export function Delta({ value }: { value: number }) {
   const up = value > 0;
   const Icon = up ? ArrowUp : ArrowDown;
   return (
-    <span className={`delta ${up ? 'delta--up' : 'delta--down'}`} aria-label={`${up ? 'Subiu' : 'Caiu'} ${Math.abs(value)} ${Math.abs(value) === 1 ? 'posição' : 'posições'}`}>
+    <span className={`delta ${up ? 'delta--up' : 'delta--down'}`} role="img" aria-label={`${up ? 'Subiu' : 'Caiu'} ${Math.abs(value)} ${Math.abs(value) === 1 ? 'posição' : 'posições'}`}>
       <Icon size={14} aria-hidden />
       {Math.abs(value)}
     </span>

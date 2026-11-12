@@ -152,7 +152,7 @@ export default function ParticipantsPage() {
           </EmptyState>
         ) : (
           <>
-            <div className="table-wrap">
+            <div className="table-wrap" tabIndex={0} role="region" aria-label="Tabela de participantes (rolável)">
               <table className="table">
                 <caption className="sr-only">Participantes, ordenados por {SORT_LABEL[sort].toLowerCase()}</caption>
                 <thead>

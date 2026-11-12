@@ -25,9 +25,9 @@ export function GameCard({ game, selected, featured }: { game: GameDef; selected
       </Link>
       <div className="game__body">
         <div className="game__text">
-          <h3 className="game__name" id={`game-${game.id}`}>
+          <h2 className="game__name" id={`game-${game.id}`}>
             <Link to={`/game-hub/${game.id}`}>{game.name}</Link>
-          </h3>
+          </h2>
           <p className="game__summary">{featured ? game.description : game.summary}</p>
           <p className="game__meta">
             <span>{game.playersLabel}</span>
@@ -40,7 +40,7 @@ export function GameCard({ game, selected, featured }: { game: GameDef; selected
             Configurar
           </ButtonLink>
           {playable ? (
-            <Button size="sm" variant="primary" icon={Play} iconRight={ArrowRight} onClick={openInArena} aria-label={`Abrir ${game.name} na arena`}>
+            <Button size="sm" variant="primary" icon={Play} iconRight={ArrowRight} onClick={openInArena} aria-label={`Abrir na arena: ${game.name}`}>
               Abrir na arena
             </Button>
           ) : (

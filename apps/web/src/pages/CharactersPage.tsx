@@ -26,7 +26,7 @@ function Card({ p, selected, onSelect }: { p: Participant; selected: boolean; on
   const gear = describeCharacter(spec).filter((i) => i.slot === 'Cabelo' || i.slot === 'Acessório').map((i) => i.label.split(' · ')[0]).join(' · ');
   return (
     <li>
-      <button type="button" className="char" aria-pressed={selected} onClick={onSelect} aria-label={`Selecionar personagem de @${p.username}`}>
+      <button type="button" className="char" aria-pressed={selected} onClick={onSelect}>
         <span className="char__fig">
           <AvatarSvg spec={spec} variant="full" />
         </span>

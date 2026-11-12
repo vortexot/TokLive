@@ -97,7 +97,7 @@ describe('game hub', () => {
   it('só a corrida pode ser aberta na arena; os demais mostram "Em breve" desabilitado', async () => {
     setup('/game-hub');
     await screen.findByText('6 jogos');
-    expect(screen.getByRole('button', { name: 'Abrir Corrida de obstáculos na arena' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Abrir na arena: Corrida de obstáculos' })).toBeEnabled();
     expect(screen.getAllByRole('button', { name: 'Em breve' })).toHaveLength(5);
   });
 });

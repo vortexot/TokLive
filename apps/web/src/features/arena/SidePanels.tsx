@@ -20,7 +20,7 @@ export function StandingsPanel() {
         <span className="panel__sub">{rows.length ? (ended ? 'final' : 'ao vivo') : ''}</span>
       </header>
       {rows.length ? (
-        <div className="side__scroll">
+        <div className="side__scroll" tabIndex={0} role="region" aria-label="Classificação da corrida (rolável)">
           <LaneBoard rows={rows} label="Classificação da corrida" />
         </div>
       ) : (
@@ -116,7 +116,7 @@ export function ChatPanel() {
       {chat.length === 0 ? (
         <EmptyState icon={Users} title="Sem comentários" text="Os comentários da LIVE e os comandos aparecem aqui." />
       ) : (
-        <ul className="chat">
+        <ul className="chat" tabIndex={0} aria-label="Últimos comentários (rolável)">
           {chat.map((m) => (
             <li key={m.id} className="chat__msg">
               <strong>@{m.username}</strong>{' '}

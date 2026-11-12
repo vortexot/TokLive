@@ -95,7 +95,7 @@ export default function RankingPage() {
             <Podium rows={rows} />
             {rest.length ? (
               <>
-                <div className="table-wrap">
+                <div className="table-wrap" tabIndex={0} role="region" aria-label="Tabela de classificação (rolável)">
                   <table className="rank-table">
                     <caption className="sr-only">Classificação a partir do 4º lugar</caption>
                     <thead>

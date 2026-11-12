@@ -49,7 +49,7 @@ function NotificationsMenu() {
           {items.length === 0 ? (
             <p className="notif__empty">Nada novo por aqui. Os eventos da LIVE aparecem nesta lista.</p>
           ) : (
-            <ul className="notif__list">
+            <ul className="notif__list" tabIndex={0} aria-label="Notificações (rolável)">
               {items.map((item) => (
                 <li key={item.id} className="notif__item">
                   <span className="notif__icon">
@@ -84,7 +84,7 @@ function AccountMenu() {
   return (
     <Popover
       trigger={({ open, toggle, ref, id }) => (
-        <button ref={ref} type="button" className="user-btn" aria-label="Menu da conta" aria-expanded={open} aria-controls={open ? id : undefined} onClick={toggle}>
+        <button ref={ref} type="button" className="user-btn" aria-label={`${initials || 'TA'}, menu da conta`} aria-expanded={open} aria-controls={open ? id : undefined} onClick={toggle}>
           <span className="user-badge" aria-hidden>
             {initials || 'TA'}
           </span>
