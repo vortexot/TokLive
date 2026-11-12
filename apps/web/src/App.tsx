@@ -9,6 +9,7 @@ import ArenaPage from './pages/ArenaPage';
 import ParticipantsPage from './pages/ParticipantsPage';
 import CharactersPage from './pages/CharactersPage';
 import RankingPage from './pages/RankingPage';
+import StatsPage from './pages/StatsPage';
 
 export default function App() {
   return (
@@ -23,6 +24,7 @@ export default function App() {
             <Route path="participantes" element={<ParticipantsPage />} />
             <Route path="personagens" element={<CharactersPage />} />
             <Route path="ranking" element={<RankingPage />} />
+            <Route path="estatisticas" element={<StatsPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>
