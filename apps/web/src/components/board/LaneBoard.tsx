@@ -1,4 +1,4 @@
-import { Flag, Shield, TriangleAlert, Zap } from 'lucide-react';
+import { Shield, TriangleAlert, Zap } from 'lucide-react';
 import { Avatar } from '../avatar/AvatarSvg';
 import './board.css';
 
@@ -19,7 +19,7 @@ const CONDITION: Record<LaneCondition, { label: string; icon: typeof Zap } | nul
   impulso: { label: 'Impulso', icon: Zap },
   escudo: { label: 'Escudo', icon: Shield },
   atordoado: { label: 'Tropeçou', icon: TriangleAlert },
-  chegou: { label: 'Chegou', icon: Flag },
+  chegou: null,
   correndo: null,
 };
 

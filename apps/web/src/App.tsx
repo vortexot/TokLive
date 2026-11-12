@@ -5,6 +5,7 @@ import NotFoundPage from './pages/NotFoundPage';
 import OverviewPage from './pages/OverviewPage';
 import GameConfigPage from './pages/GameConfigPage';
 import GameHubPage from './pages/GameHubPage';
+import ArenaPage from './pages/ArenaPage';
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
             <Route index element={<OverviewPage />} />
             <Route path="game-hub" element={<GameHubPage />} />
             <Route path="game-hub/:gameId" element={<GameConfigPage />} />
+            <Route path="arena" element={<ArenaPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>
