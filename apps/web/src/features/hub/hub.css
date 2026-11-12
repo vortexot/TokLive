@@ -1,0 +1,198 @@
+.hub {
+  display: grid;
+  gap: var(--s-5);
+}
+.hub__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3) var(--s-5);
+}
+.hub__search {
+  flex: 0 1 22rem;
+  min-width: 14rem;
+}
+.hub__count {
+  margin-left: auto;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+.hub__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
+  gap: var(--s-4);
+}
+
+/* Cartão de jogo */
+.game {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  overflow: hidden;
+  transition: border-color var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-out);
+}
+.game:hover {
+  border-color: var(--line-strong);
+}
+.game--selected {
+  border-color: var(--red-deep);
+}
+.game__art {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--bg);
+  /* chanfro de 45° na quina superior direita: marca das placas do produto */
+  clip-path: polygon(0 0, calc(100% - var(--notch)) 0, 100% var(--notch), 100% 100%, 0 100%);
+}
+.game__art .game-art {
+  width: 100%;
+  height: 100%;
+  transition: transform var(--dur-3) var(--ease-out);
+}
+.game:hover .game__art .game-art {
+  transform: scale(1.035);
+}
+.game__status {
+  position: absolute;
+  left: var(--s-3);
+  top: var(--s-3);
+}
+.game__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--s-4);
+  padding: var(--s-4);
+}
+.game__name {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+}
+.game__name a {
+  text-decoration: none;
+}
+.game__name a:hover {
+  text-decoration: underline;
+}
+.game__summary {
+  margin-top: var(--s-1);
+  color: var(--text-2);
+}
+.game__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin-top: var(--s-3);
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+}
+.game__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
+/* O jogo prioritário ocupa duas colunas e ganha o texto completo */
+@media (min-width: 1100px) {
+  .game--featured {
+    grid-column: span 2;
+    flex-direction: row;
+  }
+  .game--featured .game__art {
+    flex: 1.35;
+    aspect-ratio: auto;
+    min-height: 17rem;
+  }
+  .game--featured .game__body {
+    flex: 1;
+    justify-content: space-between;
+    padding: var(--s-5);
+  }
+  .game--featured .game__name {
+    font-size: var(--fs-xl);
+  }
+}
+
+/* Página de configuração */
+.cfg {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: var(--s-5);
+  align-items: start;
+}
+.cfg__stage {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  background: var(--bg);
+  overflow: hidden;
+}
+.cfg__stage .game-art {
+  width: 100%;
+  height: 100%;
+}
+.cfg__soon {
+  position: absolute;
+  left: var(--s-4);
+  bottom: var(--s-4);
+  max-width: 28rem;
+  padding: var(--s-3) var(--s-4);
+  background: rgb(11 11 13 / 0.88);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-2);
+  font-size: var(--fs-sm);
+}
+.cfg__soon strong {
+  display: block;
+  margin-bottom: 2px;
+}
+.cfg__about {
+  display: grid;
+  gap: var(--s-3);
+  padding: var(--s-5);
+}
+.cfg__about h2 {
+  font-size: var(--fs-xl);
+  font-weight: 700;
+}
+.cfg__form {
+  display: grid;
+  gap: var(--s-5);
+  padding: var(--s-5);
+}
+.cfg__group {
+  display: grid;
+  gap: var(--s-2);
+}
+.cfg__legend {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.cfg__saved {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+.cfg__foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  padding-top: var(--s-4);
+  border-top: 1px dashed var(--line-strong);
+}
+.cfg__foot .grow {
+  flex: 1;
+}
+
+@media (max-width: 1080px) {
+  .cfg {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
