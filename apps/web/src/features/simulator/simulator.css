@@ -1,0 +1,94 @@
+.sim {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-sheet);
+  display: flex;
+  flex-direction: column;
+  width: min(24rem, 100vw);
+  background: var(--bg-2);
+  border-left: 1px dashed var(--line-strong);
+  box-shadow: var(--shadow-sheet);
+  transform: translateX(104%);
+  visibility: hidden;
+  transition: transform var(--dur-3) var(--ease-out), visibility 0s linear var(--dur-3);
+}
+.sim--open {
+  transform: none;
+  visibility: visible;
+  transition: transform var(--dur-3) var(--ease-out);
+}
+.sim__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  border-bottom: 1px solid var(--line);
+}
+.sim__title {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+}
+.sim__note {
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+.sim__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--s-2) var(--s-4) var(--s-6);
+}
+.sim__section {
+  display: grid;
+  gap: var(--s-3);
+  padding: var(--s-4) 0;
+}
+.sim__section + .sim__section {
+  border-top: 1px dashed var(--line-strong);
+}
+.sim__h {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text);
+}
+.sim__hint {
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+.sim__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-2);
+}
+.sim__grid .btn {
+  justify-content: flex-start;
+}
+.sim__row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+.sim__label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-width: 6.5rem;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.sim__form {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: var(--s-2);
+}
+
+@media (min-width: 1280px) {
+  .shell--sim .shell__main {
+    padding-right: min(24rem, 100vw);
+  }
+}

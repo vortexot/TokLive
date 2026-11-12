@@ -1,0 +1,23 @@
+import { lazy } from 'react';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { AppShell } from './components/layout/AppShell';
+import { AppProvider } from './state/AppProvider';
+import NotFoundPage from './pages/NotFoundPage';
+import OverviewPage from './pages/OverviewPage';
+
+void lazy;
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppProvider>
+        <Routes>
+          <Route element={<AppShell />}>
+            <Route index element={<OverviewPage />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Route>
+        </Routes>
+      </AppProvider>
+    </BrowserRouter>
+  );
+}
