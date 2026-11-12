@@ -193,12 +193,19 @@ export function createApp(options: AppOptions = {}): App {
     let last = now();
 
     // Passo da partida e limpeza de efeitos (20 vezes por segundo, só quando há o que atualizar).
+    // Em aba oculta o navegador reduz a frequência dos temporizadores; por isso o tempo decorrido
+    // é consumido em passos curtos, e a partida segue em tempo real em vez de ficar lenta.
     const ticker = setInterval(() => {
       const t = now();
-      const dt = Math.min(0.25, Math.max(0, (t - last) / 1000));
+      let remaining = Math.min(2, Math.max(0, (t - last) / 1000));
       last = t;
       const s = store.getState();
-      if (s.match || s.effects.length) update((state, c) => engine.tickMatch(state, dt, c));
+      if (!s.match && !s.effects.length) return;
+      do {
+        const step = Math.min(0.1, remaining);
+        update((state, c) => engine.tickMatch(state, step, c));
+        remaining -= step;
+      } while (remaining > 1e-6);
     }, 50);
     stops.push(() => clearInterval(ticker));
 
@@ -279,8 +286,10 @@ export function createApp(options: AppOptions = {}): App {
       if (message.type !== 'snapshot') return;
       synced = true;
       if (standalone) {
+        // O painel apareceu depois da espera: abandona a simulação própria e passa a seguir o painel.
         standalone = false;
         clearTimeout(autoplayTimer);
+        store.setState((s) => ({ ...s, simulator: { ...s.simulator, auto: false } }));
       }
       store.setState((s) => applySnapshot(s, message.snapshot));
     });

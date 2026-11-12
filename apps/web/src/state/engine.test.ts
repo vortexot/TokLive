@@ -294,6 +294,20 @@ describe('partida', () => {
     expect(store.getState().match).toBeNull();
   });
 
+  it('recupera o tempo perdido quando o navegador reduz os temporizadores (aba oculta)', async () => {
+    const app = await makeApp('segundo-plano', () => Date.now());
+    app.actions.selectGame('corrida');
+    app.actions.startMatch();
+    app.store.setState((s) => ({ ...s, match: { ...s.match!, status: 'em-andamento', countdown: 0 } }));
+    vi.useFakeTimers();
+    const stop = app.start();
+    // Um único disparo do temporizador depois de 1,5 s de "silêncio".
+    vi.setSystemTime(Date.now() + 1500);
+    vi.advanceTimersByTime(50);
+    stop();
+    expect(app.store.getState().match!.t).toBeGreaterThan(1.4);
+  });
+
   it('presente de impulso durante a corrida altera só o personagem de quem enviou', async () => {
     const { store, actions } = await makeApp();
     actions.selectGame('corrida');
