@@ -26,33 +26,39 @@ function PanelRoot() {
   );
 }
 
+export function AppRoutes() {
+  return (
+    <Routes>
+      <Route
+        path="/overlay/:token"
+        element={
+          <Suspense fallback={null}>
+            <OverlayRoute />
+          </Suspense>
+        }
+      />
+      <Route element={<PanelRoot />}>
+        <Route index element={<OverviewPage />} />
+        <Route path="game-hub" element={<GameHubPage />} />
+        <Route path="game-hub/:gameId" element={<GameConfigPage />} />
+        <Route path="arena" element={<ArenaPage />} />
+        <Route path="participantes" element={<ParticipantsPage />} />
+        <Route path="personagens" element={<CharactersPage />} />
+        <Route path="ranking" element={<RankingPage />} />
+        <Route path="estatisticas" element={<StatsPage />} />
+        <Route path="configuracoes" element={<SettingsPage />} />
+        <Route path="conta" element={<AccountPage />} />
+        <Route path="ajuda" element={<HelpPage />} />
+        <Route path="*" element={<NotFoundPage />} />
+      </Route>
+    </Routes>
+  );
+}
+
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route
-          path="/overlay/:token"
-          element={
-            <Suspense fallback={null}>
-              <OverlayRoute />
-            </Suspense>
-          }
-        />
-        <Route element={<PanelRoot />}>
-          <Route index element={<OverviewPage />} />
-          <Route path="game-hub" element={<GameHubPage />} />
-          <Route path="game-hub/:gameId" element={<GameConfigPage />} />
-          <Route path="arena" element={<ArenaPage />} />
-          <Route path="participantes" element={<ParticipantsPage />} />
-          <Route path="personagens" element={<CharactersPage />} />
-          <Route path="ranking" element={<RankingPage />} />
-          <Route path="estatisticas" element={<StatsPage />} />
-          <Route path="configuracoes" element={<SettingsPage />} />
-          <Route path="conta" element={<AccountPage />} />
-          <Route path="ajuda" element={<HelpPage />} />
-          <Route path="*" element={<NotFoundPage />} />
-        </Route>
-      </Routes>
+      <AppRoutes />
     </BrowserRouter>
   );
 }

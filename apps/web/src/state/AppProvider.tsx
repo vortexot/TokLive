@@ -4,6 +4,9 @@ import { createApp, type Actions, type App, type Role } from './app';
 import { StoreContext } from './store';
 
 const ActionsContext = createContext<Actions | null>(null);
+
+/** Permite trocar a criação do app (testes injetam relógio, aleatório e serviço de dados). */
+export const AppFactoryContext = createContext<((role: Role) => App) | null>(null);
 const DataServiceContext = createContext<DataService | null>(null);
 
 export function useDataService(): DataService {
@@ -20,7 +23,8 @@ export function useActions(): Actions {
 
 /** Cria o app uma vez, liga os temporizadores e carrega os dados (painel). */
 export function AppProvider({ children, role = 'panel', app: injected }: { children: ReactNode; role?: Role; app?: App }) {
-  const [app] = useState(() => injected ?? createApp({ role }));
+  const factory = useContext(AppFactoryContext);
+  const [app] = useState(() => injected ?? factory?.(role) ?? createApp({ role }));
 
   useEffect(() => {
     const stop = app.start();
