@@ -35,7 +35,7 @@ export function TextField({
       <label className={hideLabel ? 'sr-only' : 'field__label'} htmlFor={id}>
         {label}
       </label>
-      <div className={`input-wrap${prefix ? ' input-wrap--prefix' : ''}`}>
+      <div className={`input-wrap${prefix ? ' input-wrap--prefix' : ''}${Icon ? ' input-wrap--icon' : ''}`}>
         {Icon ? <Icon size={16} aria-hidden /> : null}
         {prefix ? <span className="input-prefix" aria-hidden>{prefix}</span> : null}
         <input
