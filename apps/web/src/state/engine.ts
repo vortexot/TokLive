@@ -401,6 +401,18 @@ function joinLobby(state: AppState, actor: Participant, ctx: Ctx): AppState {
   return s;
 }
 
+/* ---------- Personagens ---------- */
+
+/** Sorteia uma nova aparência: troca a semente persistida do personagem. */
+export function rerollCharacter(state: AppState, participantId: string, ctx: Ctx): AppState {
+  const target = state.participants.find((p) => p.id === participantId);
+  if (!target) return state;
+  const base = target.characterSeed.split('~')[0] ?? target.username;
+  const characterSeed = `${base}~${Math.floor(ctx.rng() * 36 ** 5).toString(36)}`;
+  const participants = state.participants.map((p) => (p.id === participantId ? { ...p, characterSeed } : p));
+  return pushToast({ ...state, participants }, { tone: 'ok', title: `Nova aparência para @${target.username}`, detail: 'A semente do personagem foi atualizada e fica salva.' }, ctx);
+}
+
 /* ---------- Votação da plateia ---------- */
 
 export function castVote(state: AppState, username: string, option: number, ctx: Ctx): AppState {

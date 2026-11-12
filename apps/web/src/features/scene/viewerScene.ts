@@ -7,7 +7,7 @@ import { buildCharacter, type CharacterRig, type PoseMode } from './characterMes
 export class ViewerScene {
   private renderer: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
-  private camera = new THREE.PerspectiveCamera(30, 3 / 4, 0.1, 50);
+  private camera = new THREE.PerspectiveCamera(27, 3 / 4, 0.1, 50);
   private pivot = new THREE.Group();
   private rig: CharacterRig | null = null;
   private pad: THREE.Mesh;
@@ -39,8 +39,8 @@ export class ViewerScene {
     ring.position.y = 0.005;
     this.scene.add(ring);
     this.scene.add(this.pivot);
-    this.camera.position.set(0, 1.45, 5.6);
-    this.camera.lookAt(0, 1.0, 0);
+    this.camera.position.set(0, 1.25, 5.0);
+    this.camera.lookAt(0, 0.98, 0);
   }
 
   setSpec(spec: CharacterSpec): void {

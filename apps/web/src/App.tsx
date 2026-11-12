@@ -6,6 +6,8 @@ import OverviewPage from './pages/OverviewPage';
 import GameConfigPage from './pages/GameConfigPage';
 import GameHubPage from './pages/GameHubPage';
 import ArenaPage from './pages/ArenaPage';
+import ParticipantsPage from './pages/ParticipantsPage';
+import CharactersPage from './pages/CharactersPage';
 
 export default function App() {
   return (
@@ -17,6 +19,8 @@ export default function App() {
             <Route path="game-hub" element={<GameHubPage />} />
             <Route path="game-hub/:gameId" element={<GameConfigPage />} />
             <Route path="arena" element={<ArenaPage />} />
+            <Route path="participantes" element={<ParticipantsPage />} />
+            <Route path="personagens" element={<CharactersPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>

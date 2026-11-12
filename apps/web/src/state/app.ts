@@ -40,6 +40,7 @@ export interface Actions {
   endMatch(): void;
   dismissMatch(): void;
   resetPoll(): void;
+  rerollCharacter(participantId: string): void;
   updateSettings(patch: Partial<Settings>): void;
   setSimulator(patch: Partial<SimulatorState>): void;
   toast(tone: 'info' | 'ok' | 'warn' | 'erro', title: string, detail?: string): void;
@@ -169,6 +170,7 @@ export function createApp(options: AppOptions = {}): App {
     endMatch: () => update((s, c) => engine.endMatch(s, c)),
     dismissMatch: () => update((s) => engine.dismissMatch(s)),
     resetPoll: () => update((s) => engine.resetPoll(s)),
+    rerollCharacter: (id) => update((s, c) => engine.rerollCharacter(s, id, c)),
 
     updateSettings: (patch) => update((s) => engine.updateSettings(s, patch)),
     setSimulator: (patch) => update((s) => engine.setSimulator(s, patch)),

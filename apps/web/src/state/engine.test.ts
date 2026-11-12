@@ -174,6 +174,30 @@ describe('eventos da LIVE', () => {
   });
 });
 
+describe('personagens', () => {
+  it('sortear nova aparência troca a semente, mantém o usuário e se repete de forma diferente', async () => {
+    const { store, actions } = await makeApp();
+    const target = store.getState().participants[5]!;
+    actions.rerollCharacter(target.id);
+    const first = store.getState().participants.find((p) => p.id === target.id)!;
+    expect(first.characterSeed).not.toBe(target.characterSeed);
+    expect(first.characterSeed.startsWith(`${target.username}~`)).toBe(true);
+    expect(first.username).toBe(target.username);
+    actions.rerollCharacter(target.id);
+    const second = store.getState().participants.find((p) => p.id === target.id)!;
+    expect(second.characterSeed.startsWith(`${target.username}~`)).toBe(true);
+    expect(second.characterSeed).not.toBe(first.characterSeed);
+    expect(second.characterSeed.split('~')).toHaveLength(2);
+  });
+
+  it('ignora participante inexistente', async () => {
+    const { store, actions } = await makeApp();
+    const before = store.getState().participants;
+    actions.rerollCharacter('nao-existe');
+    expect(store.getState().participants).toBe(before);
+  });
+});
+
 describe('partida', () => {
   it('exige jogo escolhido e recusa jogos em desenvolvimento', async () => {
     const { store, actions } = await makeApp();
