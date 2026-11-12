@@ -1,8 +1,16 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import type { DataService } from '../services/dataService';
 import { createApp, type Actions, type App, type Role } from './app';
 import { StoreContext } from './store';
 
 const ActionsContext = createContext<Actions | null>(null);
+const DataServiceContext = createContext<DataService | null>(null);
+
+export function useDataService(): DataService {
+  const service = useContext(DataServiceContext);
+  if (!service) throw new Error('DataServiceContext ausente: envolva a aplicação em <AppProvider>.');
+  return service;
+}
 
 export function useActions(): Actions {
   const actions = useContext(ActionsContext);
@@ -22,7 +30,9 @@ export function AppProvider({ children, role = 'panel', app: injected }: { child
 
   return (
     <StoreContext.Provider value={app.store}>
-      <ActionsContext.Provider value={app.actions}>{children}</ActionsContext.Provider>
+      <ActionsContext.Provider value={app.actions}>
+        <DataServiceContext.Provider value={app.dataService}>{children}</DataServiceContext.Provider>
+      </ActionsContext.Provider>
     </StoreContext.Provider>
   );
 }

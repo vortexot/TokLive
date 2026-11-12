@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 /** Relógio que re-renderiza a cada `intervalMs`, para textos como "há 5 min". */
 export function useNow(intervalMs = 15_000): number {
@@ -31,4 +31,33 @@ export function useMediaQuery(query: string): boolean {
     return () => mql.removeEventListener('change', onChange);
   }, [query]);
   return matches;
+}
+
+export interface AsyncState<T> {
+  data: T | null;
+  error: string | null;
+  loading: boolean;
+  reload: () => void;
+}
+
+/** Carrega dados assíncronos com estados de carregamento e erro; ignora respostas de pedidos antigos. */
+export function useAsync<T>(load: () => Promise<T>, deps: readonly unknown[]): AsyncState<T> {
+  const [state, setState] = useState<{ data: T | null; error: string | null; loading: boolean }>({ data: null, error: null, loading: true });
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    setState((s) => ({ ...s, loading: true, error: null }));
+    load().then(
+      (data) => !cancelled && setState({ data, error: null, loading: false }),
+      (err: unknown) => !cancelled && setState({ data: null, error: err instanceof Error ? err.message : 'Falha ao carregar.', loading: false }),
+    );
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [...deps, tick]);
+
+  const reload = useCallback(() => setTick((t) => t + 1), []);
+  return { ...state, reload };
 }

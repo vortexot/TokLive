@@ -1,0 +1,78 @@
+.chart {
+  margin: 0;
+}
+.chart svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.chart__grid {
+  stroke: var(--line-strong);
+  stroke-dasharray: 3 5;
+  stroke-width: 1;
+}
+.chart__tick {
+  fill: var(--text-3);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.chart__line {
+  fill: none;
+  stroke: var(--red);
+  stroke-width: 2.4;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.chart__area {
+  fill: var(--red);
+  opacity: 0.1;
+}
+.chart__dot {
+  fill: var(--panel);
+  stroke: var(--red);
+  stroke-width: 2;
+}
+.chart__bar {
+  fill: #5a5a66;
+}
+.chart__bar:hover {
+  fill: var(--text-2);
+}
+.chart__bar--now {
+  fill: var(--red);
+}
+.hbars {
+  display: grid;
+  gap: var(--s-3);
+}
+.hbars__row {
+  display: grid;
+  grid-template-columns: minmax(7rem, 11rem) minmax(0, 1fr) 3.2rem;
+  align-items: center;
+  gap: var(--s-3);
+  font-size: var(--fs-sm);
+}
+.hbars__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hbars__track {
+  height: 8px;
+  background: var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.hbars__fill {
+  display: block;
+  height: 100%;
+  background: #5a5a66;
+  border-radius: 8px;
+}
+.hbars__fill--lead {
+  background: var(--red);
+}
+.hbars__value {
+  text-align: right;
+  font-weight: 600;
+}
