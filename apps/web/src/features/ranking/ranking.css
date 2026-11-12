@@ -1,0 +1,156 @@
+.rank {
+  display: grid;
+  gap: var(--s-4);
+}
+.rank__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--s-3) var(--s-5);
+}
+.rank__bar .select {
+  min-width: 14rem;
+}
+
+/* Pódio: segundo, primeiro e terceiro, com blocos de alturas diferentes */
+.podium {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: var(--s-3);
+  padding: var(--s-5) var(--s-5) 0;
+}
+.podium__spot {
+  display: grid;
+  justify-items: center;
+  gap: var(--s-2);
+  min-width: 0;
+}
+.podium__spot--1 {
+  order: 2;
+}
+.podium__spot--2 {
+  order: 1;
+}
+.podium__spot--3 {
+  order: 3;
+}
+.podium__name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.podium__stats {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+.podium__points {
+  color: var(--text);
+  font-size: 1.9rem;
+}
+.podium__block {
+  display: grid;
+  place-items: start center;
+  width: 100%;
+  padding-top: var(--s-2);
+  background: var(--raised);
+  clip-path: polygon(0 0, calc(100% - var(--notch)) 0, 100% var(--notch), 100% 100%, 0 100%);
+}
+.podium__spot--1 .podium__block {
+  height: 7.2rem;
+  background: var(--red);
+}
+.podium__spot--2 .podium__block {
+  height: 5.2rem;
+}
+.podium__spot--3 .podium__block {
+  height: 3.8rem;
+}
+.podium__num {
+  font-size: 3rem;
+  color: var(--text-2);
+}
+.podium__spot--1 .podium__num {
+  color: #fff;
+}
+.podium__spot--1 .podium__points {
+  color: var(--red-ink);
+}
+.podium__delta {
+  min-height: 1.2rem;
+}
+
+/* Lista */
+.rank-table {
+  width: 100%;
+  min-width: 34rem;
+}
+.rank-table th,
+.rank-table td {
+  padding: 0.55rem var(--s-4);
+  white-space: nowrap;
+  text-align: left;
+}
+.rank-table thead th {
+  border-bottom: 1px solid var(--line-strong);
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.rank-table tbody tr + tr td {
+  border-top: 1px dashed var(--line-strong);
+}
+.rank-table .r {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.rank-table td.pos {
+  width: 3.2rem;
+  font-size: 1.5rem;
+  color: var(--text-2);
+}
+.rank-table .evo {
+  width: 3.5rem;
+}
+.rank-table th.pos {
+  width: 3.2rem;
+}
+.rank-table .who-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  font-weight: 600;
+}
+.rank-more {
+  display: flex;
+  justify-content: center;
+  padding: var(--s-3);
+  border-top: 1px solid var(--line);
+}
+
+@container page (max-width: 560px) {
+  .podium {
+    grid-template-columns: minmax(0, 1fr);
+    padding: var(--s-4);
+  }
+  .podium__spot {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    justify-items: start;
+    align-items: center;
+    gap: var(--s-3);
+  }
+  .podium__spot--1,
+  .podium__spot--2,
+  .podium__spot--3 {
+    order: initial;
+  }
+  .podium__block {
+    display: none;
+  }
+}
