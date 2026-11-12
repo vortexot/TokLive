@@ -404,7 +404,9 @@ export class RaceScene {
   private moveCamera(order: { id: string; x: number }[], dt: number, match: MatchState | null, t: number): void {
     const width = this.laneCount * LANE_W;
     const aspect = Math.max(0.6, this.camera.aspect);
-    const distance = Math.max(20, (width * 0.78) / Math.min(1.6, aspect) + 6);
+    const fitted = Math.max(20, (width * 0.78) / Math.min(1.6, aspect) + 6);
+    // Sem partida, o grid fica mais perto da câmera para preencher o quadro.
+    const distance = match ? fitted : Math.max(14, fitted * 0.86);
     let targetX = -1;
     if (match && order.length) {
       const leader = order[0]!.x;

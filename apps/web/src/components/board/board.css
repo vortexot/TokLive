@@ -1,0 +1,96 @@
+.lanes {
+  display: grid;
+}
+.lane {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2.1rem auto minmax(0, 1fr) minmax(4rem, 9rem) auto;
+  align-items: center;
+  gap: var(--s-3);
+  min-height: 2.9rem;
+  padding: 0.3rem var(--s-3);
+}
+.lanes--compact .lane {
+  grid-template-columns: 1.9rem auto minmax(0, 1fr) auto;
+  min-height: 2.5rem;
+  padding: 0.2rem var(--s-3);
+}
+/* A régua de raia: tracejado entre as linhas */
+.lane + .lane {
+  border-top: 1px dashed var(--line-strong);
+}
+.lane__pos {
+  font-size: 1.55rem;
+  color: var(--text-2);
+  text-align: right;
+}
+.lane--lead {
+  background: var(--red-wash);
+}
+.lane--lead .lane__pos {
+  color: var(--red-ink);
+}
+.lane__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.lane__track {
+  height: 6px;
+  background: var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.lane__fill {
+  display: block;
+  height: 100%;
+  background: var(--text-2);
+  border-radius: 6px;
+  transition: width 220ms linear;
+}
+.lane--lead .lane__fill {
+  background: var(--red);
+}
+.lane__end {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--s-2);
+  min-width: 3.2rem;
+}
+.lane__value {
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.lane__tag {
+  display: inline-grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: var(--r-1);
+  background: var(--raised);
+}
+.lane__tag--impulso {
+  color: var(--red-ink);
+}
+.lane__tag--escudo {
+  color: #cfe3ff;
+}
+.lane__tag--atordoado {
+  color: var(--warn);
+}
+.lane__tag--chegou {
+  color: var(--ok);
+}
+
+@media (max-width: 560px) {
+  .lane {
+    grid-template-columns: 1.8rem auto minmax(0, 1fr) auto;
+  }
+  .lane__track {
+    display: none;
+  }
+}
