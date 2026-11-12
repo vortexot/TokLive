@@ -246,13 +246,13 @@
   white-space: nowrap;
 }
 
-@media (max-width: 1180px) {
+@container page (max-width: 960px) {
   .overview__top,
   .overview__grid {
     grid-template-columns: minmax(0, 1fr);
   }
 }
-@media (max-width: 760px) {
+@container page (max-width: 640px) {
   .conn__main {
     grid-template-columns: minmax(0, 1fr);
     padding: var(--s-4);
