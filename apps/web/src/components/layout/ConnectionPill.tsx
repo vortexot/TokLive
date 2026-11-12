@@ -46,7 +46,7 @@ export function ConnectionPill({ showHandle = true }: { showHandle?: boolean }) 
     <span className={`conn-pill${live ? ' conn-pill--live' : ''}`} role="status" aria-label={`Conexão simulada: ${STATUS_LABEL[status]}${handle ? ` em @${handle}` : ''}`}>
       <Pill tone={STATUS_TONE[status]}>
         {live ? <span className="live-dot" aria-hidden /> : <StatusIcon status={status} />}
-        {STATUS_LABEL[status]}
+        <span className="conn-pill__text">{STATUS_LABEL[status]}</span>
       </Pill>
       {showHandle && handle ? <span className="conn-pill__handle">@{handle}</span> : null}
     </span>

@@ -491,8 +491,23 @@
   }
 }
 
+@media (max-width: 640px) {
+  /* Em tela estreita a pílula fica só com o ícone: o título da página precisa do espaço. */
+  .conn-pill__text {
+    display: none;
+  }
+  .conn-pill .pill {
+    padding: 0.4rem;
+  }
+  .conn-pill .live-dot {
+    margin: 0 0.1rem;
+  }
+}
 @media (max-width: 560px) {
   .header__tools {
     gap: var(--s-1);
+  }
+  .header__title {
+    font-size: 1.3rem;
   }
 }
