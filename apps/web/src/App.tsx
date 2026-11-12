@@ -10,6 +10,9 @@ import ParticipantsPage from './pages/ParticipantsPage';
 import CharactersPage from './pages/CharactersPage';
 import RankingPage from './pages/RankingPage';
 import StatsPage from './pages/StatsPage';
+import SettingsPage from './pages/SettingsPage';
+import AccountPage from './pages/AccountPage';
+import HelpPage from './pages/HelpPage';
 
 export default function App() {
   return (
@@ -25,6 +28,9 @@ export default function App() {
             <Route path="personagens" element={<CharactersPage />} />
             <Route path="ranking" element={<RankingPage />} />
             <Route path="estatisticas" element={<StatsPage />} />
+            <Route path="configuracoes" element={<SettingsPage />} />
+            <Route path="conta" element={<AccountPage />} />
+            <Route path="ajuda" element={<HelpPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>
