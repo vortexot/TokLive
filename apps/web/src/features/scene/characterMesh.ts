@@ -247,6 +247,14 @@ const nameMaterials = new Map<string, THREE.SpriteMaterial>();
 export function makeNameSprite(text: string): THREE.Sprite {
   let material = nameMaterials.get(text);
   if (!material) {
+    // Em sessões longas passam centenas de nomes: o cache tem teto para não acumular texturas.
+    if (nameMaterials.size >= 300) {
+      nameMaterials.forEach((m) => {
+        m.map?.dispose();
+        m.dispose();
+      });
+      nameMaterials.clear();
+    }
     const canvas = document.createElement('canvas');
     canvas.width = 384;
     canvas.height = 80;

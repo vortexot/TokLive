@@ -109,6 +109,7 @@ export class RaceScene {
   private obstacleDummy = new THREE.Object3D();
   private ownGeometries: THREE.BufferGeometry[] = [];
   private ownMaterials: THREE.Material[] = [];
+  private ownTextures: THREE.Texture[] = [];
 
   constructor(canvas: HTMLCanvasElement, private options: SceneOptions) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: options.transparent, powerPreference: 'high-performance' });
@@ -178,8 +179,10 @@ export class RaceScene {
     this.track.clear();
     this.ownGeometries.forEach((g) => g.dispose());
     this.ownMaterials.forEach((m) => m.dispose());
+    this.ownTextures.forEach((t) => t.dispose());
     this.ownGeometries = [];
     this.ownMaterials = [];
+    this.ownTextures = [];
     this.obstacles = null;
   }
 
@@ -230,6 +233,7 @@ export class RaceScene {
 
     // Chegada: faixa quadriculada e pórtico.
     const checker = checkerTexture();
+    this.ownTextures.push(checker);
     const finish = new THREE.Mesh(this.own(new THREE.PlaneGeometry(2.4, width)), this.ownMat(new THREE.MeshBasicMaterial({ map: checker })));
     finish.rotation.x = -Math.PI / 2;
     const tex = (finish.material as THREE.MeshBasicMaterial).map;
@@ -253,6 +257,7 @@ export class RaceScene {
     const banner = bannerSprite('CHEGADA');
     this.ownGeometries.push(banner.geometry);
     this.ownMaterials.push(banner.material as THREE.Material);
+    this.ownTextures.push((banner.material as THREE.MeshBasicMaterial).map as THREE.Texture);
     banner.rotation.y = -Math.PI / 2;
     banner.position.set(trackLength - 0.52, 7.4, 0);
     banner.scale.set(Math.max(1, (width + 2) / 9), 1, 1);
