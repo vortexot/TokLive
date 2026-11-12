@@ -1,11 +1,12 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { AppRoutes } from '../App';
 import { createRng } from '../domain/prng';
 import { createLocalDataService } from '../services/dataService';
 import { createApp, type App, type Role } from '../state/app';
-import { AppFactoryContext } from '../state/AppProvider';
+import { AppFactoryContext, AppProvider } from '../state/AppProvider';
+import { Toasts } from '../components/ui/Toasts';
 
 function setup(path = '/') {
   const apps: App[] = [];
@@ -275,5 +276,30 @@ describe('configurações e conta', () => {
     const dialog = await screen.findByRole('dialog');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Restaurar' }));
     expect(await screen.findByText('Dados restaurados')).toBeInTheDocument();
+  });
+});
+
+describe('avisos', () => {
+  it('somem sozinhos no prazo, e um aviso novo não reinicia o prazo dos antigos', () => {
+    vi.useFakeTimers();
+    try {
+      const app = createApp({ role: 'panel', persist: false, rng: createRng('avisos'), dataService: createLocalDataService({ latencyMs: 0 }) });
+      render(
+        <AppProvider app={app}>
+          <Toasts />
+        </AppProvider>,
+      );
+      act(() => app.actions.toast('info', 'Aviso A'));
+      act(() => void vi.advanceTimersByTime(3000));
+      act(() => app.actions.toast('info', 'Aviso B'));
+      expect(screen.getByText('Aviso A')).toBeInTheDocument();
+      act(() => void vi.advanceTimersByTime(2100)); // 5,1 s desde o A
+      expect(screen.queryByText('Aviso A')).toBeNull();
+      expect(screen.getByText('Aviso B')).toBeInTheDocument();
+      act(() => void vi.advanceTimersByTime(3000));
+      expect(screen.queryByText('Aviso B')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { AlertTriangle, CheckCircle2, Info, OctagonAlert, X } from 'lucide-react';
 import type { ToastItem } from '../../domain/session';
 import { useActions } from '../../state/AppProvider';
@@ -10,10 +10,13 @@ const ICONS = { ok: CheckCircle2, info: Info, warn: AlertTriangle, erro: Octagon
 
 function ToastView({ toast, onClose }: { toast: ToastItem; onClose: () => void }) {
   const Icon = ICONS[toast.tone];
+  // O callback muda a cada render do pai; guardado em ref para o prazo não reiniciar quando chega outro aviso.
+  const close = useRef(onClose);
+  close.current = onClose;
   useEffect(() => {
-    const timer = setTimeout(onClose, toast.tone === 'erro' || toast.tone === 'warn' ? 8000 : 5000);
+    const timer = setTimeout(() => close.current(), toast.tone === 'erro' || toast.tone === 'warn' ? 8000 : 5000);
     return () => clearTimeout(timer);
-  }, [toast.id, toast.tone, onClose]);
+  }, [toast.id, toast.tone]);
   return (
     <div className={`toast toast--${toast.tone}`}>
       <Icon className="toast__icon" size={18} aria-hidden />
