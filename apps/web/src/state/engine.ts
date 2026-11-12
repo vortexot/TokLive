@@ -25,6 +25,7 @@ import type {
   LiveEvent,
   MatchState,
   Participant,
+  ParticipantStatus,
 } from '../domain/types';
 import type { DemoDataset } from '../services/mockData';
 import type { AppState, Ctx } from './types';
@@ -147,13 +148,20 @@ export function normalizeUsername(raw: string | undefined): string | undefined {
   return clean.length >= 2 ? clean : undefined;
 }
 
-export function participantStatus(state: AppState, p: Participant, now: number) {
-  if (state.match && state.match.status !== 'encerrada' && state.match.racers.some((r) => r.participantId === p.id)) {
-    return 'em-partida' as const;
-  }
-  if (state.lobby.includes(p.id)) return 'na-fila' as const;
-  if (now - p.lastSeenAt > INACTIVE_AFTER_MS) return 'inativo' as const;
-  return 'ativo' as const;
+/** Estado de um participante, a partir de quem corre agora e de quem está na fila. */
+export function statusFrom(p: Participant, racing: ReadonlySet<string>, queued: ReadonlySet<string>, now: number): ParticipantStatus {
+  if (racing.has(p.id)) return 'em-partida';
+  if (queued.has(p.id)) return 'na-fila';
+  if (now - p.lastSeenAt > INACTIVE_AFTER_MS) return 'inativo';
+  return 'ativo';
+}
+
+export function racingIds(match: MatchState | null): Set<string> {
+  return new Set(match && match.status !== 'encerrada' ? match.racers.map((r) => r.participantId) : []);
+}
+
+export function participantStatus(state: AppState, p: Participant, now: number): ParticipantStatus {
+  return statusFrom(p, racingIds(state.match), new Set(state.lobby), now);
 }
 
 export function isMatchActive(match: MatchState | null): boolean {

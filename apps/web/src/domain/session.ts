@@ -38,8 +38,6 @@ export interface Counters {
   events: number;
 }
 
-export const EMPTY_COUNTERS: Counters = { likes: 0, comments: 0, gifts: 0, shares: 0, follows: 0, events: 0 };
-
 export interface Goal {
   target: number;
   progress: number;

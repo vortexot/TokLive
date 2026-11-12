@@ -124,14 +124,6 @@ export function isLaneBlocked(o: Obstacle, lane: number, laneCount: number, t: n
   }
 }
 
-/** Posição lateral (em raias) do vão do portão ou do centro do pêndulo, para o desenho. */
-export function obstacleFocus(o: Obstacle, laneCount: number, t: number): number {
-  const top = Math.max(1, laneCount - 1);
-  if (o.kind === 'portao') return (0.5 + 0.5 * Math.sin(t * 0.9 + o.phase)) * top;
-  if (o.kind === 'pendulo') return (0.5 + 0.5 * Math.sin(t * 1.4 + o.phase)) * top;
-  return top / 2;
-}
-
 function stepCountdown(state: MatchState, dt: number): MatchState {
   const countdown = state.countdown - dt;
   if (countdown > 0) return { ...state, countdown };

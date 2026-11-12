@@ -22,14 +22,6 @@ export function saveJson(key: string, value: unknown): boolean {
   }
 }
 
-export function removeKey(key: string): void {
-  try {
-    window.localStorage.removeItem(PREFIX + key);
-  } catch {
-    /* sem armazenamento: nada a remover */
-  }
-}
-
 export function clearAll(): void {
   try {
     const keys: string[] = [];

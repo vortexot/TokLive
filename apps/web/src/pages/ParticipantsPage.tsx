@@ -11,7 +11,7 @@ import { ParticipantDialog } from '../features/participants/ParticipantDialog';
 import { STATUS_LABEL, StatusPill } from '../features/participants/status';
 import { formatDate, formatNumber, plural } from '../lib/format';
 import { useDebounced, useNow } from '../lib/hooks';
-import { INACTIVE_AFTER_MS } from '../state/engine';
+import { racingIds, statusFrom } from '../state/engine';
 import { useAppState } from '../state/store';
 import '../features/participants/participants.css';
 
@@ -78,12 +78,9 @@ export default function ParticipantsPage() {
   const debounced = useDebounced(query, 150);
 
   const rows = useMemo<Row[]>(() => {
-    const racing = new Set(match && match.status !== 'encerrada' ? match.racers.map((r) => r.participantId) : []);
+    const racing = racingIds(match);
     const queued = new Set(lobby);
-    return participants.map((p) => ({
-      p,
-      status: racing.has(p.id) ? 'em-partida' : queued.has(p.id) ? 'na-fila' : now - p.lastSeenAt > INACTIVE_AFTER_MS ? 'inativo' : 'ativo',
-    }));
+    return participants.map((p) => ({ p, status: statusFrom(p, racing, queued, now) }));
   }, [participants, lobby, match, now]);
 
   const visible = useMemo(() => {
