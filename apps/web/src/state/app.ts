@@ -91,6 +91,7 @@ export function createApp(options: AppOptions = {}): App {
   const update = (fn: (state: AppState, c: Ctx) => AppState) => store.setState((s) => fn(s, ctx()));
 
   /* ----- conexão simulada ----- */
+  let loading: Promise<void> | null = null;
   let timers: ReturnType<typeof setTimeout>[] = [];
   const clearTimers = () => {
     timers.forEach(clearTimeout);
@@ -102,16 +103,23 @@ export function createApp(options: AppOptions = {}): App {
   const setStatus = (status: ConnectionStatus) => update((s, c) => engine.setConnectionStatus(s, status, c));
 
   const actions: Actions = {
-    async bootstrap() {
+    bootstrap() {
+      // Idempotente: chamadas simultâneas (ex.: StrictMode) compartilham o mesmo carregamento.
+      if (loading) return loading;
       store.setState((s) => ({ ...s, loadError: null, ready: false }));
-      try {
-        const dataset = await dataService.loadDataset();
-        const prefs = loadJson<engine.PersistedPrefs>('prefs');
-        update((s, c) => engine.hydrate(s, dataset, prefs, c));
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Falha ao carregar os dados.';
-        store.setState((s) => ({ ...s, loadError: message }));
-      }
+      loading = (async () => {
+        try {
+          const dataset = await dataService.loadDataset();
+          const prefs = loadJson<engine.PersistedPrefs>('prefs');
+          update((s, c) => engine.hydrate(s, dataset, prefs, c));
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Falha ao carregar os dados.';
+          store.setState((s) => ({ ...s, loadError: message }));
+        } finally {
+          loading = null;
+        }
+      })();
+      return loading;
     },
 
     emit: (event) => update((s, c) => engine.applyLiveEvent(s, event, c)),
@@ -290,7 +298,7 @@ export function createApp(options: AppOptions = {}): App {
       autoplayTimer = setTimeout(autoplay, 1000);
     };
 
-    const beginStandalone = async () => {
+    const beginStandalone = () => {
       if (synced) return;
       standalone = true;
       const dataset = generateDataset(now());
