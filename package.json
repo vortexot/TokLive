@@ -1,0 +1,19 @@
+{
+  "name": "tokarena",
+  "private": true,
+  "version": "0.1.0",
+  "description": "TokArena: plataforma de minigames 3D interativos para TikTok LIVE (interface de demonstração com dados simulados).",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @tokarena/web",
+    "build": "npm run build -w @tokarena/web",
+    "preview": "npm run preview -w @tokarena/web",
+    "typecheck": "npm run typecheck -w @tokarena/web",
+    "test": "npm run test -w @tokarena/web"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
