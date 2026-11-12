@@ -1,0 +1,424 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-12T07:14:34+00:00",
+  "title": "Design System: TokArena",
+  "extensions": {
+    "colorMeta": {
+      "bg": {
+        "role": "neutral",
+        "displayName": "Preto de Arena",
+        "canonical": "#0b0b0d",
+        "tonalRamp": [
+          "#242429",
+          "#3e3e48",
+          "#595968",
+          "#737388",
+          "#9393a3",
+          "#b3b3bd",
+          "#d2d2d8",
+          "#f1f1f3"
+        ]
+      },
+      "bg-2": {
+        "role": "neutral",
+        "displayName": "Preto Lateral",
+        "canonical": "#111114",
+        "tonalRamp": [
+          "#242429",
+          "#3f3f48",
+          "#595968",
+          "#747488",
+          "#9393a3",
+          "#b3b3bd",
+          "#d2d2d8",
+          "#f1f1f3"
+        ]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Painel",
+        "canonical": "#17171c",
+        "tonalRamp": [
+          "#232329",
+          "#3e3e49",
+          "#585869",
+          "#71718a",
+          "#9292a4",
+          "#b2b2be",
+          "#d2d2d9",
+          "#f1f1f3"
+        ]
+      },
+      "raised": {
+        "role": "neutral",
+        "displayName": "Superfície Elevada",
+        "canonical": "#202026",
+        "tonalRamp": [
+          "#242429",
+          "#3e3e48",
+          "#595968",
+          "#737388",
+          "#9393a3",
+          "#b3b3bd",
+          "#d2d2d8",
+          "#f1f1f3"
+        ]
+      },
+      "red": {
+        "role": "primary",
+        "displayName": "Vermelho Arena",
+        "canonical": "#e32636",
+        "tonalRamp": [
+          "#3f0e12",
+          "#71151d",
+          "#a71b26",
+          "#de1d2d",
+          "#e4525e",
+          "#e9878f",
+          "#f0babf",
+          "#faebec"
+        ]
+      },
+      "red-deep": {
+        "role": "primary",
+        "displayName": "Vermelho Escuro",
+        "canonical": "#b51224",
+        "tonalRamp": [
+          "#400c12",
+          "#74131d",
+          "#ab1627",
+          "#e4172e",
+          "#e94d5e",
+          "#ec8490",
+          "#f2b8bf",
+          "#faeaec"
+        ]
+      },
+      "red-ink": {
+        "role": "primary",
+        "displayName": "Vermelho Tinta",
+        "canonical": "#ff5c68",
+        "tonalRamp": [
+          "#46070b",
+          "#7f0811",
+          "#bb0613",
+          "#fb0013",
+          "#fa3c4a",
+          "#f77982",
+          "#f8b2b7",
+          "#fce8ea"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Filete",
+        "canonical": "#292930",
+        "tonalRamp": [
+          "#242429",
+          "#3f3f48",
+          "#595968",
+          "#747488",
+          "#9393a2",
+          "#b3b3bd",
+          "#d2d2d8",
+          "#f1f1f3"
+        ]
+      },
+      "line-strong": {
+        "role": "neutral",
+        "displayName": "Filete Forte",
+        "canonical": "#3b3b45",
+        "tonalRamp": [
+          "#242429",
+          "#3f3f48",
+          "#595968",
+          "#747487",
+          "#9393a2",
+          "#b3b3bd",
+          "#d2d2d8",
+          "#f1f1f3"
+        ]
+      },
+      "line-control": {
+        "role": "neutral",
+        "displayName": "Borda de Controle",
+        "canonical": "#6e6e7a",
+        "tonalRamp": [
+          "#252528",
+          "#404046",
+          "#5c5c65",
+          "#777784",
+          "#9696a0",
+          "#b5b5bb",
+          "#d3d3d7",
+          "#f2f2f3"
+        ]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Texto",
+        "canonical": "#f5f5f5",
+        "tonalRamp": [
+          "#262626",
+          "#434343",
+          "#616161",
+          "#7e7e7e",
+          "#9b9b9b",
+          "#b8b8b8",
+          "#d5d5d5",
+          "#f2f2f2"
+        ]
+      },
+      "text-2": {
+        "role": "neutral",
+        "displayName": "Texto Secundário",
+        "canonical": "#a1a1aa",
+        "tonalRamp": [
+          "#252528",
+          "#404046",
+          "#5c5c65",
+          "#777784",
+          "#9696a0",
+          "#b5b5bb",
+          "#d3d3d7",
+          "#f2f2f3"
+        ]
+      },
+      "text-3": {
+        "role": "neutral",
+        "displayName": "Texto Terciário",
+        "canonical": "#8a8a94",
+        "tonalRamp": [
+          "#252528",
+          "#404046",
+          "#5c5c65",
+          "#787883",
+          "#96969f",
+          "#b5b5bb",
+          "#d3d3d7",
+          "#f2f2f3"
+        ]
+      },
+      "ok": {
+        "role": "state",
+        "displayName": "Verde de Estado",
+        "canonical": "#3ddc97",
+        "tonalRamp": [
+          "#103c29",
+          "#1a6d49",
+          "#22a069",
+          "#27d589",
+          "#59dda4",
+          "#8ce4be",
+          "#bdedd8",
+          "#ebf9f3"
+        ]
+      },
+      "warn": {
+        "role": "state",
+        "displayName": "Âmbar de Estado",
+        "canonical": "#f5b544",
+        "tonalRamp": [
+          "#432e0a",
+          "#79520e",
+          "#b2770f",
+          "#ee9d0d",
+          "#f0b246",
+          "#f1c87f",
+          "#f4deb6",
+          "#fbf5e9"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Título de página",
+        "purpose": "Título da página no cabeçalho, em caixa alta."
+      },
+      "score": {
+        "displayName": "Placar",
+        "purpose": "Posição, tempo, pontos e nível, sempre tabular."
+      },
+      "title": {
+        "displayName": "Saudação",
+        "purpose": "Saudação da visão geral."
+      },
+      "heading": {
+        "displayName": "Título de painel",
+        "purpose": "Título de painel."
+      },
+      "body": {
+        "displayName": "Texto",
+        "purpose": "Texto corrido e células de dados."
+      },
+      "label": {
+        "displayName": "Rótulo",
+        "purpose": "Rótulos de campo e cabeçalhos de tabela."
+      }
+    },
+    "shadows": [
+      {
+        "name": "pop",
+        "value": "0 14px 36px rgb(0 0 0 / .55), 0 2px 8px rgb(0 0 0 / .45)",
+        "purpose": "Camadas flutuantes: popover, diálogo, aviso."
+      },
+      {
+        "name": "sheet",
+        "value": "-18px 0 48px rgb(0 0 0 / .5)",
+        "purpose": "Gaveta do simulador."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Padrão para estados e entradas."
+      },
+      {
+        "name": "dur-1",
+        "value": "120ms",
+        "purpose": "Hover e pressionar."
+      },
+      {
+        "name": "dur-2",
+        "value": "220ms",
+        "purpose": "Painéis, diálogos, interruptores."
+      },
+      {
+        "name": "dur-3",
+        "value": "360ms",
+        "purpose": "Gavetas, avisos e barras de progresso."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "rail-collapse",
+        "value": "900px"
+      },
+      {
+        "name": "page-container-wide",
+        "value": "960px (largura do conteúdo, container query)"
+      },
+      {
+        "name": "page-container-narrow",
+        "value": "640px (largura do conteúdo, container query)"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Botão primário",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Ação principal da tela.",
+      "html": "<button class=\"ds-btn-primary\">Iniciar partida</button>",
+      "css": ".ds-btn-primary{height:36px;padding:0 16px;background:#e32636;color:#fff;border:1px solid transparent;border-radius:6px;font:600 14px Inter,system-ui,sans-serif;cursor:pointer;transition:background 120ms cubic-bezier(.16,1,.3,1)}.ds-btn-primary:hover{background:#ee3a49}.ds-btn-primary:active{background:#b51224}.ds-btn-primary:focus-visible{outline:2px solid #ff5c68;outline-offset:2px}"
+    },
+    {
+      "name": "Botão secundário",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Ação de apoio.",
+      "html": "<button class=\"ds-btn-secondary\">Configurar</button>",
+      "css": ".ds-btn-secondary{height:36px;padding:0 16px;background:#202026;color:#f5f5f5;border:1px solid #3b3b45;border-radius:6px;font:600 14px Inter,system-ui,sans-serif;cursor:pointer}.ds-btn-secondary:hover{background:#2a2a32;border-color:#50505c}.ds-btn-secondary:focus-visible{outline:2px solid #ff5c68;outline-offset:2px}"
+    },
+    {
+      "name": "Botão de perigo",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Encerrar partida, restaurar dados.",
+      "html": "<button class=\"ds-btn-danger\">Encerrar</button>",
+      "css": ".ds-btn-danger{height:36px;padding:0 16px;background:transparent;color:#ff5c68;border:1px solid #b51224;border-radius:6px;font:600 14px Inter,system-ui,sans-serif;cursor:pointer}.ds-btn-danger:hover{background:rgb(227 38 54 / .14)}.ds-btn-danger:focus-visible{outline:2px solid #ff5c68;outline-offset:2px}"
+    },
+    {
+      "name": "Campo de texto",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Campo com rótulo visível e dica.",
+      "html": "<label class=\"ds-field\"><span>@ do TikTok</span><input class=\"ds-input\" placeholder=\"seu.usuario\"></label>",
+      "css": ".ds-field{display:grid;gap:8px;font:600 13px Inter,system-ui,sans-serif;color:#f5f5f5}.ds-input{height:40px;padding:0 12px;background:#111114;color:#f5f5f5;border:1px solid #6e6e7a;border-radius:6px;font:400 14px Inter,system-ui,sans-serif}.ds-input::placeholder{color:#8a8a94}.ds-input:hover{border-color:#8a8a96}.ds-input:focus-visible{outline:2px solid #ff5c68;outline-offset:1px;border-color:#ff5c68}"
+    },
+    {
+      "name": "Item de navegação ativo",
+      "kind": "nav",
+      "refersTo": "nav-link-active",
+      "description": "Item da barra lateral na página atual.",
+      "html": "<a class=\"ds-nav ds-nav--active\" href=\"#\"><span class=\"ds-nav__ico\"></span>Game Hub</a>",
+      "css": ".ds-nav{display:flex;align-items:center;gap:12px;height:40px;padding:0 12px;border-radius:6px;color:#a1a1aa;font:500 14px Inter,system-ui,sans-serif;text-decoration:none}.ds-nav:hover{background:#17171c;color:#f5f5f5}.ds-nav--active{background:#202026;color:#f5f5f5;font-weight:600}.ds-nav__ico{width:18px;height:18px;border:2px solid #ff5c68;border-radius:4px}"
+    },
+    {
+      "name": "Pílula Ao vivo",
+      "kind": "chip",
+      "refersTo": "pill-live",
+      "description": "Única pílula preenchida de vermelho.",
+      "html": "<span class=\"ds-pill\"><i class=\"ds-dot\"></i>Ao vivo</span>",
+      "css": ".ds-pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;background:#e32636;color:#fff;border-radius:999px;font:600 12px Inter,system-ui,sans-serif}.ds-dot{width:7px;height:7px;border-radius:50%;background:#fff}"
+    },
+    {
+      "name": "Painel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Contêiner padrão: título, filete e corpo.",
+      "html": "<section class=\"ds-panel\"><header>Resumo do ambiente</header><div>120 participantes</div></section>",
+      "css": ".ds-panel{background:#17171c;border:1px solid #292930;border-radius:6px;color:#f5f5f5;font:400 14px Inter,system-ui,sans-serif}.ds-panel header{padding:12px 16px;border-bottom:1px solid #292930;font-weight:600}.ds-panel div{padding:16px}"
+    },
+    {
+      "name": "Linha do quadro de raias (líder)",
+      "kind": "custom",
+      "refersTo": "panel",
+      "description": "Classificação com posição em placar; o líder em vermelho.",
+      "html": "<ol class=\"ds-lanes\"><li class=\"ds-lane ds-lane--lead\"><b>1</b><span>@mari.quati</span><em>48 m</em></li><li class=\"ds-lane\"><b>2</b><span>@lobo73</span><em>47 m</em></li></ol>",
+      "css": ".ds-lanes{margin:0;padding:0;list-style:none;width:320px;background:#17171c;border:1px solid #292930;border-radius:6px;color:#f5f5f5;font:600 14px Inter,system-ui,sans-serif}.ds-lane{display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:12px;padding:8px 12px;min-height:44px}.ds-lane+.ds-lane{border-top:1px dashed #3b3b45}.ds-lane b{font:700 25px 'Barlow Condensed','Arial Narrow',sans-serif;color:#a1a1aa;text-align:right}.ds-lane em{font-style:normal;font-weight:600;color:#a1a1aa}.ds-lane--lead{background:rgb(227 38 54 / .14)}.ds-lane--lead b{color:#ff5c68}"
+    }
+  ],
+  "narrative": {
+    "northStar": "O Quadro de Resultados",
+    "overview": "O TokArena é uma sala de controle de arena construída como o quadro de resultados de uma corrida. O preto domina; o vermelho aparece só onde algo está ao vivo, ativo, selecionado ou liderando. Os jogos e os personagens são o centro, e o painel é o apoio.",
+    "keyCharacteristics": [
+      "Preto quase puro com painéis em degraus e filetes finos.",
+      "Numerais de placar em Barlow Condensed, sempre tabulares.",
+      "Réguas de raia (tracejado fino) como divisor.",
+      "Chanfro de 45° em placas não interativas.",
+      "Vermelho como única cor de marca; verde e âmbar só como estado."
+    ],
+    "rules": [
+      {
+        "name": "The Leader Red Rule",
+        "body": "O vermelho marca ao vivo, ativo, selecionado ou líder. Se tudo é vermelho, nada é líder.",
+        "section": "colors"
+      },
+      {
+        "name": "The Ink Rule",
+        "body": "Texto vermelho pequeno usa #ff5c68, nunca #e32636 (3.9:1 no painel).",
+        "section": "colors"
+      },
+      {
+        "name": "The Scoreboard Numerals Rule",
+        "body": "Todo número que muda ou compara usa Barlow tabular ou tabular-nums.",
+        "section": "typography"
+      },
+      {
+        "name": "The Lane Rule",
+        "body": "Linhas de lista e de dados são separadas por tracejado fino, como divisórias de raia.",
+        "section": "layout"
+      },
+      {
+        "name": "The Chamfer Rule",
+        "body": "O chanfro marca superfícies que não recebem foco; botões e campos mantêm o raio comum.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "Do usar #ffffff sobre vermelho e #ff5c68 para texto vermelho pequeno.",
+      "Do separar linhas com tracejado fino e usar numerais tabulares para dados.",
+      "Do escrever \"demonstração\" onde houver dado simulado.",
+      "Do usar container queries nos layouts de página."
+    ],
+    "donts": [
+      "Don't usar vermelho como decoração ou em todos os elementos.",
+      "Don't usar kicker/eyebrow acima de títulos, faixa lateral colorida, texto com gradiente nem sombras de deslocamento duro.",
+      "Don't usar emojis ou símbolos Unicode como ícones.",
+      "Don't aplicar clip-path a elementos focáveis."
+    ]
+  }
+}
