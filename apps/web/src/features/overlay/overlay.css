@@ -1,0 +1,341 @@
+/* O overlay é desenhado em um espaço fixo de 1920×1080 e escalado para a janela. */
+html.overlay-mode,
+html.overlay-mode body,
+html.overlay-mode #root {
+  background: transparent !important;
+  overflow: hidden;
+}
+html.overlay-mode ::-webkit-scrollbar {
+  display: none;
+}
+
+.ov {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: transparent;
+  color: #fff;
+  font-family: var(--font-ui);
+}
+.ov__scene {
+  position: absolute;
+  inset: 0;
+}
+.ov__hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1920px;
+  height: 1080px;
+  transform: scale(var(--s, 1));
+  transform-origin: top left;
+  pointer-events: none;
+}
+
+.ov-panel {
+  background: rgb(11 11 13 / 0.84);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  box-shadow: 0 10px 36px rgb(0 0 0 / 0.45);
+}
+.ov-panel__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 28px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.ov-brand {
+  position: absolute;
+  top: 32px;
+  left: 36px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 20px 10px 12px;
+  background: rgb(11 11 13 / 0.84);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+}
+.ov-brand__word {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 30px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.ov-brand__sub {
+  color: var(--text-2);
+  font-size: 18px;
+}
+.ov-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 8px;
+  padding: 4px 12px;
+  background: var(--red);
+  border-radius: 999px;
+  font-size: 18px;
+  font-weight: 700;
+}
+.ov-live .live-dot {
+  width: 10px;
+  height: 10px;
+}
+
+.ov-goal {
+  position: absolute;
+  top: 32px;
+  left: 50%;
+  width: 700px;
+  transform: translateX(-50%);
+  padding: 14px 24px 18px;
+  background: rgb(11 11 13 / 0.84);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+}
+.ov-goal__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 26px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.ov-goal__fig {
+  margin-left: auto;
+  font-size: 34px;
+}
+.ov-goal__fig small {
+  color: var(--text-2);
+  font-family: var(--font-ui);
+  font-size: 18px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.ov-bar {
+  height: 16px;
+  margin-top: 10px;
+  background: var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.ov-bar__fill {
+  height: 100%;
+  background: var(--red);
+  border-radius: 16px;
+  transition: width 280ms var(--ease-out);
+}
+
+.ov-rank {
+  position: absolute;
+  top: 130px;
+  right: 36px;
+  width: 460px;
+  zoom: 1.28;
+  transform-origin: top right;
+}
+.ov-rank .lane {
+  min-height: 2.4rem;
+}
+
+.ov-feed {
+  position: absolute;
+  left: 36px;
+  bottom: 36px;
+  width: 560px;
+}
+.ov-feed ul {
+  display: grid;
+  padding: 6px 0;
+}
+.ov-feed li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 14px;
+  padding: 9px 20px;
+}
+.ov-feed li + li {
+  border-top: 1px dashed var(--line-strong);
+}
+.ov-feed__icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  background: var(--raised);
+  border-radius: 6px;
+  color: var(--red-ink);
+}
+.ov-feed strong {
+  display: block;
+  font-size: 22px;
+}
+.ov-feed small {
+  display: block;
+  color: var(--text-2);
+  font-size: 18px;
+}
+
+.ov-fx {
+  position: absolute;
+  right: 36px;
+  bottom: 36px;
+  display: grid;
+  gap: 12px;
+  justify-items: end;
+}
+.ov-fx__item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-width: 560px;
+  padding: 14px 24px;
+  background: rgb(11 11 13 / 0.9);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  animation: ov-in 400ms var(--ease-out);
+}
+.ov-fx__item svg {
+  flex: none;
+  color: var(--red-ink);
+}
+.ov-fx__item--vitoria svg {
+  color: var(--warn);
+}
+.ov-fx__item strong {
+  display: block;
+  font-size: 26px;
+}
+.ov-fx__item small {
+  display: block;
+  color: var(--text-2);
+  font-size: 20px;
+}
+@keyframes ov-in {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+}
+
+.ov-turbo {
+  position: absolute;
+  top: 150px;
+  left: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 40px;
+  transform: translateX(-50%);
+  background: var(--red);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 48px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  clip-path: polygon(22px 0, 100% 0, calc(100% - 22px) 100%, 0 100%);
+}
+
+.ov-center {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+.ov-center--wait {
+  align-content: center;
+  justify-items: center;
+  gap: 12px;
+}
+.ov-count {
+  font-size: 300px;
+  text-shadow: 0 8px 40px rgb(0 0 0 / 0.75);
+  animation: ov-pop 1s var(--ease-out) both;
+}
+@keyframes ov-pop {
+  from {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+  25% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.88;
+    transform: scale(1);
+  }
+}
+.ov-wait {
+  padding: 10px 40px;
+  background: rgb(11 11 13 / 0.78);
+  border-radius: 10px;
+  font-size: 64px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.ov-wait__sub {
+  padding: 6px 22px;
+  background: rgb(11 11 13 / 0.78);
+  border-radius: 8px;
+  font-size: 26px;
+}
+.ov-wait__sub strong {
+  color: var(--red-ink);
+}
+.ov-results {
+  width: 720px;
+}
+.ov-results ol {
+  display: grid;
+  padding: 10px 14px 16px;
+  gap: 4px;
+}
+.ov-results li {
+  display: grid;
+  grid-template-columns: 56px auto 1fr;
+  align-items: center;
+  gap: 18px;
+  padding: 8px 14px;
+  border-radius: 8px;
+}
+.ov-results__win {
+  background: var(--red-wash);
+}
+.ov-results__pos {
+  font-size: 54px;
+  text-align: right;
+}
+.ov-results__win .ov-results__pos {
+  color: var(--red-ink);
+}
+.ov-results__who strong {
+  display: block;
+  font-size: 30px;
+}
+.ov-results__who small {
+  color: var(--text-2);
+  font-size: 22px;
+}
+.ov-debug {
+  position: absolute;
+  right: 36px;
+  top: 36px;
+  padding: 4px 12px;
+  background: rgb(11 11 13 / 0.84);
+  border-radius: 6px;
+  color: var(--text-2);
+  font-size: 18px;
+}
