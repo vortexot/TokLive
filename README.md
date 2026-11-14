@@ -64,6 +64,8 @@ npm run palco -- @seu_usuario
 6. Clique em **Abrir tela do palco** e capture essa janela no OBS ou no TikTok LIVE Studio (captura de janela). O som sai pelo Chrome: capture o áudio do aplicativo Chrome ou o áudio da área de trabalho. Com `#/palco-cena?fundo=verde`, o fundo fica verde para recorte.
 7. Na LIVE, os espectadores participam comentando o comando do quadro (`!pergunta`, `!recado`, `!sorte`, `!e`, `!confesso`, `!tema`). Presentes, seguidores, compartilhamentos e a meta de curtidas também geram falas. No painel, você ainda pode falar com os bonecos pelo microfone ou por texto.
 
+**IA no seu computador (sem chave).** Em vez da Anthropic, a ponte pode usar o [Ollama](https://ollama.com) com o modelo `qwen2.5:3b`, o mesmo da Mentiliza. Instale o Ollama, rode `ollama pull qwen2.5:3b` e ponha `PALCO_IA=ollama` no `worker/.env` (opcionais: `OLLAMA_MODELO` e `OLLAMA_URL`). Não há custo por fala e o chat da LIVE não sai do computador: a ponte recusa um `OLLAMA_URL` que não seja o próprio PC. Ao subir, a ponte já carrega o modelo e o mantém carregado por 30 minutos sem uso; espere a mensagem "Modelo local pronto" antes de ligar o palco (neste PC, carregar levou de 36 s a 2 min). Enquanto isso, as falas usam o roteiro. Um modelo de 3B responde pior que o Claude e às vezes foge do formato; quando isso acontece, entra a fala de roteiro. A velocidade depende do seu computador. A IA responde só com texto: ela não tem ferramentas nem acesso ao computador.
+
 Deixe a aba do Palco aberta durante a LIVE: é ela que decide as falas e toca a voz. O modelo padrão é `claude-opus-5-5`; para respostas mais rápidas e baratas, use `PALCO_MODELO=claude-haiku-5-5` no `worker/.env`. Cada fala é uma chamada à API, cobrada na sua conta.
 
 ### Publicação (GitHub Pages)
@@ -127,12 +129,12 @@ Decisões que facilitam trocar o simulador pelo serviço real:
 
 ## O que foi verificado
 
-- 258 testes: Palco (fila, filtros, diretor, texto enviado à IA, ponte), cadastro de bonecos, regras dos seis jogos (determinismo, término, classificação, casos específicos), motor de eventos, benefícios de presentes e curtidas em todos os jogos, tradução de mensagens da LIVE, camada Supabase com cliente falso, worker com conexão falsa, login e interface.
+- 266 testes: Palco (fila, filtros, diretor, texto enviado à IA, ponte, cliente Ollama), cadastro de bonecos, regras dos seis jogos (determinismo, término, classificação, casos específicos), motor de eventos, benefícios de presentes e curtidas em todos os jogos, tradução de mensagens da LIVE, camada Supabase com cliente falso, worker com conexão falsa, login e interface.
 - Segurança do banco: a migração roda em um Postgres real (PGlite) e os testes conferem que um criador só lê o que é dele, que o anônimo não lê tabelas, que o token do overlay é gerado no servidor e que só o worker grava eventos.
 - Escala: com 5.000 participantes, um evento custa cerca de 0,1 ms; 3.000 eventos misturados e mil pessoas comentando `!entrar` são processados dentro dos limites dos testes; o estado enviado ao overlay tem tamanho fixo (cerca de 47 KB) mesmo com 10.000 participantes. No navegador, o painel abre todas as páginas com 5.000 participantes sem erro, e a taxa de quadros da partida foi a mesma de 120 participantes (cerca de 23 quadros por segundo, **medidos com renderização por software, sem GPU**: em um computador comum deve ser bem maior, mas isso não foi medido).
 - Eventos remotos são aplicados em lote (até 10 vezes por segundo) e curtidas do mesmo espectador são somadas no worker, para que mil pessoas interagindo não travem o painel.
 
-- **Palco ao vivo:** a geração de falas pela IA foi testada com uma IA falsa e contra a API real apenas no caminho de erro (chave recusada). **Nenhuma fala real da IA foi gerada nos testes**, e a ponte nunca rodou contra uma LIVE real. A voz usa a síntese do navegador e não foi ouvida nos testes. O reconhecimento de voz do microfone só existe no Chrome e no Edge, e o Chrome envia o áudio ao serviço de voz do Google.
+- **Palco ao vivo:** a geração de falas pela IA foi testada com uma IA falsa e contra a API real apenas no caminho de erro (chave recusada). **Nenhuma fala real da Anthropic foi gerada nos testes**, e a ponte nunca rodou contra uma LIVE real. Com o Ollama local (`qwen2.5:3b`), a ponte gerou falas reais num ensaio sem LIVE: de 1,5 a 6 s com o modelo carregado; uma resposta em cinco saiu fora do formato (vai para o roteiro) e algumas ignoraram regras do roteiro, como evitar palavras de gênero. A voz usa a síntese do navegador e não foi ouvida nos testes. O reconhecimento de voz do microfone só existe no Chrome e no Edge, e o Chrome envia o áudio ao serviço de voz do Google.
 
 ## Licenças
 
