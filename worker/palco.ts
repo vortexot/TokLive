@@ -31,6 +31,7 @@ import {
   type IaClient,
 } from './palcoCore';
 import { createTikTokConnect } from './tiktok';
+import { chooseIa, createOllamaClient } from './ollama';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(here, '..');
@@ -43,6 +44,14 @@ const env = (key: string): string | undefined => process.env[key] || fileEnv[key
 const PORT = Number(env('PALCO_PORTA') ?? 8787);
 const MODEL = env('PALCO_MODELO') ?? 'claude-opus-5-5';
 const API_KEY = env('ANTHROPIC_API_KEY');
+// Qual IA dá voz aos bonecos: PALCO_IA=ollama usa o modelo local (o mesmo da Mentiliza); sem PALCO_IA, fica como antes.
+let IA_CHOICE: ReturnType<typeof chooseIa>;
+try {
+  IA_CHOICE = chooseIa({ PALCO_IA: env('PALCO_IA'), ANTHROPIC_API_KEY: API_KEY, OLLAMA_URL: env('OLLAMA_URL'), OLLAMA_MODELO: env('OLLAMA_MODELO') });
+} catch (error) {
+  console.error(`[palco] ${error instanceof Error ? error.message : String(error)} (confira worker/.env)`);
+  process.exit(1);
+}
 const handle = (process.argv[2] ?? env('PALCO_TIKTOK') ?? '').replace(/^@/, '').trim();
 
 /* ---------- IA ---------- */
@@ -98,7 +107,8 @@ function createClaude(apiKey: string): IaClient {
   };
 }
 
-const ia: IaClient | null = API_KEY ? createClaude(API_KEY) : null;
+const ollama = IA_CHOICE.kind === 'ollama' ? createOllamaClient({ url: IA_CHOICE.url, model: IA_CHOICE.model }) : null;
+const ia: IaClient | null = ollama ?? (IA_CHOICE.kind === 'anthropic' && API_KEY ? createClaude(API_KEY) : null);
 
 /* ---------- Eventos para o painel (Server-Sent Events) ---------- */
 
@@ -111,7 +121,7 @@ function estado() {
     tiktok: state.tiktok,
     handle: handle || null,
     mensagem: state.mensagem || null,
-    ia: { ligada: Boolean(ia), modelo: ia ? MODEL : null },
+    ia: { ligada: Boolean(ia), modelo: ia ? ia.model : null },
   };
 }
 
@@ -283,10 +293,14 @@ server.on('error', (error: NodeJS.ErrnoException) => {
 server.listen(PORT, '127.0.0.1', () => {
   console.log('');
   console.log(`[palco] Ponte no ar. Abra no Chrome: http://localhost:${PORT}${BASE_PATH}#/palco`);
-  console.log(`[palco] IA: ${ia ? `ligada (${MODEL})` : 'desligada (defina ANTHROPIC_API_KEY em worker/.env)'}`);
+  console.log(`[palco] IA: ${ia ? `ligada (${ia.model})` : 'desligada (defina ANTHROPIC_API_KEY ou PALCO_IA=ollama em worker/.env)'}`);
   console.log(`[palco] TikTok: ${handle ? `@${handle}` : 'sem @ (só simulador). Use: npm run palco -- @seu_usuario'}`);
   console.log('');
   void connectTikTok();
+  if (ollama) {
+    console.log('[palco] Carregando o modelo no Ollama para a primeira fala não demorar...');
+    void ollama.warm().then((r) => console.log(r.ok ? '[palco] Modelo local pronto.' : `[palco] Ollama: ${r.motivo} As falas seguem com o roteiro até ele responder.`));
+  }
 });
 
 process.on('SIGINT', () => {

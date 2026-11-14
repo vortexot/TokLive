@@ -9,5 +9,5 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["palco.ts", "palcoCore.ts", "tiktok.ts", "core.ts", "index.ts"]
+  "include": ["palco.ts", "palcoCore.ts", "ollama.ts", "tiktok.ts", "core.ts", "index.ts"]
 }

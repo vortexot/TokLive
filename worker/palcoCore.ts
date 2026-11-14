@@ -36,7 +36,7 @@ export interface IaClient {
 }
 
 const MESSAGES: Record<IaErrorCode, string> = {
-  'sem-chave': 'A IA está desligada: defina ANTHROPIC_API_KEY no arquivo worker/.env e reinicie a ponte.',
+  'sem-chave': 'A IA está desligada: defina ANTHROPIC_API_KEY ou PALCO_IA=ollama no arquivo worker/.env e reinicie a ponte.',
   chave: 'A chave da IA foi recusada. Confira ANTHROPIC_API_KEY em worker/.env.',
   limite: 'A IA atingiu o limite de uso por agora. As falas seguem com o roteiro.',
   rede: 'Sem resposta da IA a tempo. As falas seguem com o roteiro.',
