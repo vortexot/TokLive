@@ -17,6 +17,8 @@ import ParticipantsPage from './pages/ParticipantsPage';
 import RankingPage from './pages/RankingPage';
 import SettingsPage from './pages/SettingsPage';
 import StagePage from './pages/StagePage';
+import BonecosPage from './pages/BonecosPage';
+import BonecoEditPage from './pages/BonecoEditPage';
 import StatsPage from './pages/StatsPage';
 
 // O overlay carrega separado: o OBS não precisa do painel inteiro.
@@ -74,6 +76,8 @@ export function AppRoutes() {
         <Route path="game-hub" element={<GameHubPage />} />
         <Route path="game-hub/:gameId" element={<GameConfigPage />} />
         <Route path="palco" element={<StagePage />} />
+        <Route path="palco/bonecos" element={<BonecosPage />} />
+        <Route path="palco/bonecos/:bonecoId" element={<BonecoEditPage />} />
         <Route path="arena" element={<ArenaPage />} />
         <Route path="participantes" element={<ParticipantsPage />} />
         <Route path="personagens" element={<CharactersPage />} />

@@ -1,34 +1,77 @@
 import { describe, expect, it } from 'vitest';
-import { DEMO_SCRIPTS, HOSTS, STAGE_FORMATS, beatMs, getHost, introScript, scriptedReply, speakableName, speechMs } from './stage';
+import type { Boneco } from './bonecos';
+import { DEMO_SCRIPTS, FALLBACK_PHRASES, STAGE_FORMATS, beatMs, fillName, isStageFormatId, resolveCast, scriptedReply, speakableName, speechMs } from './stage';
+
+function boneco(id: string, createdAt = 0): Boneco {
+  return {
+    id,
+    name: id,
+    persona: '',
+    phrases: [],
+    voice: { pitch: 1, rate: 1 },
+    color: '#202026',
+    media: { parado: null, falando: null },
+    createdAt,
+    updatedAt: createdAt,
+  };
+}
 
 describe('palco: catálogo e roteiros', () => {
-  it('todo quadro tem roteiro, e só fala quem está no elenco do quadro', () => {
+  it('todo quadro tem vagas e roteiro, e só fala quem tem vaga no quadro', () => {
     for (const format of STAGE_FORMATS) {
+      expect(format.slots.length).toBeGreaterThan(0);
       const beats = DEMO_SCRIPTS[format.id];
-      expect(beats.length).toBeGreaterThan(0);
-      expect(format.hostIds.length).toBeGreaterThan(0);
-      for (const beat of beats) {
-        if (beat.kind === 'fala') expect(format.hostIds).toContain(beat.hostId);
-      }
-      // Todo roteiro tem pelo menos uma fala, senão o palco ficaria mudo.
       expect(beats.some((b) => b.kind === 'fala')).toBe(true);
+      for (const beat of beats) {
+        if (beat.kind === 'fala') expect(beat.slot).toBeLessThan(format.slots.length);
+      }
+    }
+  });
+
+  it('os quadros de diálogo usam as duas vagas', () => {
+    for (const id of ['tribunal', 'duelo'] as const) {
+      const slots = new Set(DEMO_SCRIPTS[id].flatMap((b) => (b.kind === 'fala' ? [b.slot] : [])));
+      expect([...slots].sort()).toEqual([0, 1]);
     }
   });
 
   it('as falas cabem no limite longo de uma fala (280 caracteres)', () => {
-    const lines = [...Object.values(DEMO_SCRIPTS).flat(), ...HOSTS.flatMap((h) => introScript(h.id))];
-    for (const beat of lines) {
+    for (const beat of Object.values(DEMO_SCRIPTS).flat()) {
       if (beat.kind === 'fala') expect(beat.text.length).toBeLessThanOrEqual(280);
     }
   });
 
-  it('todo anfitrião participa de algum quadro e tem apresentação e respostas', () => {
-    for (const host of HOSTS) {
-      expect(STAGE_FORMATS.some((f) => f.hostIds.includes(host.id))).toBe(true);
-      expect(host.intro.length).toBeGreaterThan(0);
-      expect(host.replies.every((r) => r.includes('{nome}'))).toBe(true);
-      expect(getHost(host.id)).toBe(host);
-    }
+  it('reconhece os ids de quadro', () => {
+    expect(isStageFormatId('duelo')).toBe(true);
+    expect(isStageFormatId('nada')).toBe(false);
+    expect(isStageFormatId(null)).toBe(false);
+  });
+});
+
+describe('palco: elenco', () => {
+  it('sem bonecos, todas as vagas ficam vazias', () => {
+    const cast = resolveCast({}, []);
+    expect(cast.tribunal).toEqual([null, null]);
+    expect(cast['papo-reto']).toEqual([null]);
+  });
+
+  it('preenche vagas sem escolha com bonecos diferentes, na ordem de cadastro', () => {
+    const cast = resolveCast(null, [boneco('a', 1), boneco('b', 2)]);
+    expect(cast['papo-reto']).toEqual(['a']);
+    expect(cast.tribunal).toEqual(['a', 'b']);
+  });
+
+  it('respeita a escolha, inclusive "nenhum", e esquece boneco que não existe mais', () => {
+    const bonecos = [boneco('a'), boneco('b'), boneco('c')];
+    const cast = resolveCast({ tribunal: ['c', ''], duelo: ['sumiu', 'b'], 'papo-reto': ['b'] }, bonecos);
+    expect(cast.tribunal).toEqual(['c', null]);
+    expect(cast.duelo).toEqual(['a', 'b']);
+    expect(cast['papo-reto']).toEqual(['b']);
+  });
+
+  it('o mesmo boneco não ocupa duas vagas do mesmo quadro', () => {
+    const cast = resolveCast({ duelo: ['a', 'a'] }, [boneco('a'), boneco('b')]);
+    expect(cast.duelo).toEqual(['a', 'b']);
   });
 });
 
@@ -52,21 +95,28 @@ describe('palco: pedido de teste', () => {
     expect(speakableName('12345')).toBe('visitante');
   });
 
-  it('gera o pedido com o comando do quadro e uma resposta com o nome', () => {
-    const beats = scriptedReply('papo-reto', 'lu_gamer', '  qual o melhor jogo?  ');
-    expect(beats).toHaveLength(2);
+  it('troca {nome} em qualquer posição e caixa', () => {
+    expect(fillName('{nome}, oi. Tchau, {NOME}!', 'bia.joga')).toBe('Bia, oi. Tchau, Bia!');
+  });
+
+  it('responde com uma das falas prontas do boneco, com o comando do quadro', () => {
+    const phrases = ['Boa, {nome}!', 'Anotado, {nome}.'];
+    const beats = scriptedReply('papo-reto', 'lu_gamer', '  qual o melhor jogo?  ', phrases);
     expect(beats[0]).toEqual({ kind: 'pedido', username: 'lu_gamer', text: '!pergunta qual o melhor jogo?' });
-    expect(beats[1]).toMatchObject({ kind: 'fala', hostId: 'lula-akatsuki' });
-    expect(beats[1]!.kind === 'fala' && beats[1]!.text).toContain('Lu');
-    expect(beats[1]!.kind === 'fala' && beats[1]!.text).not.toContain('{nome}');
+    expect(beats[1]).toMatchObject({ kind: 'fala', slot: 0 });
+    const text = beats[1]!.kind === 'fala' ? beats[1]!.text : '';
+    expect(['Boa, Lu!', 'Anotado, Lu.']).toContain(text);
   });
 
-  it('é determinístico e ignora pedido vazio', () => {
-    expect(scriptedReply('duelo', 'voce', 'pizza ou hambúrguer')).toEqual(scriptedReply('duelo', 'voce', 'pizza ou hambúrguer'));
-    expect(scriptedReply('duelo', 'voce', '   ')).toEqual([]);
+  it('sem falas prontas, usa as frases padrão', () => {
+    const beats = scriptedReply('oraculo', 'nina.play', 'amor', []);
+    const text = beats[1]!.kind === 'fala' ? beats[1]!.text : '';
+    expect(FALLBACK_PHRASES.map((p) => fillName(p, 'nina.play'))).toContain(text);
   });
 
-  it('não repete o comando quando o espectador já digitou um', () => {
-    expect(scriptedReply('oraculo', 'voce', '!sorte amor')[0]).toMatchObject({ text: '!sorte amor' });
+  it('é determinístico, ignora pedido vazio e não repete o comando digitado', () => {
+    expect(scriptedReply('duelo', 'voce', 'pizza ou hambúrguer', ['a', 'b'])).toEqual(scriptedReply('duelo', 'voce', 'pizza ou hambúrguer', ['a', 'b']));
+    expect(scriptedReply('duelo', 'voce', '   ', ['a'])).toEqual([]);
+    expect(scriptedReply('oraculo', 'voce', '!sorte amor', [])[0]).toMatchObject({ text: '!sorte amor' });
   });
 });

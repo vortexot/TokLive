@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppRoutes } from '../App';
 import { createRng } from '../domain/prng';
 import { createLocalDataService } from '../services/dataService';
@@ -9,6 +9,7 @@ import { AppFactoryContext, AppProvider } from '../state/AppProvider';
 import { StaticAuth } from '../state/AuthProvider';
 import { buildOverlayUrl } from '../services/overlayAuth';
 import { Toasts } from '../components/ui/Toasts';
+import { resetBonecoStoreForTests } from '../services/bonecoStore';
 
 function setup(path = '/') {
   const apps: App[] = [];
@@ -337,42 +338,84 @@ describe('conta e link do overlay', () => {
   });
 });
 
-describe('palco (amostra visual)', () => {
-  it('abre pelo menu, mostra o quadro inicial e troca de quadro', async () => {
+describe('palco e bonecos', () => {
+  beforeEach(() => {
+    resetBonecoStoreForTests();
+    window.localStorage.clear();
+  });
+
+  it('abre pelo menu e mostra as vagas vazias enquanto não há bonecos', async () => {
     setup('/');
     await ready();
     fireEvent.click(screen.getByRole('link', { name: 'Palco' }));
     expect(await screen.findByRole('heading', { level: 1, name: 'Palco' })).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: 'Palco: Papo Reto' })).toBeInTheDocument();
-    expect(screen.getByText(/As falas são de roteiro/)).toBeInTheDocument();
+    const stage = screen.getByRole('group', { name: 'Palco: Papo Reto' });
+    expect(within(stage).getByText('Anfitrião: sem boneco')).toBeInTheDocument();
+    expect(await screen.findByText(/Você ainda não tem bonecos/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Tribunal da LIVE' }));
-    const stage = screen.getByRole('group', { name: 'Palco: Tribunal da LIVE' });
-    // Dois anfitriões em cena no tribunal.
-    expect(within(stage).getAllByRole('img')).toHaveLength(2);
-    expect(within(stage).getByText(/!confesso/, { selector: 'b' })).toBeInTheDocument();
+    const trial = screen.getByRole('group', { name: 'Palco: Tribunal da LIVE' });
+    expect(within(trial).getByText('Acusação: sem boneco')).toBeInTheDocument();
+    expect(within(trial).getByText('Defesa: sem boneco')).toBeInTheDocument();
   });
 
-  it('coloca um pedido digitado na frente do roteiro', async () => {
-    setup('/palco');
-    await ready();
-    const field = await screen.findByLabelText('Testar um pedido');
-    const send = screen.getByRole('button', { name: 'Enviar ao palco' });
-    expect(send).toBeDisabled();
-    fireEvent.change(field, { target: { value: 'qual o melhor jogo?' } });
-    fireEvent.click(send);
-    const stage = screen.getByRole('group', { name: 'Palco: Papo Reto' });
+  it('cria um boneco, que entra em cena e responde com as falas dele', async () => {
+    setup('/palco/bonecos');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Bonecos' })).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole('link', { name: 'Criar o primeiro boneco' }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Novo boneco' })).toBeInTheDocument();
+
+    // Nome é obrigatório.
+    fireEvent.click(screen.getByRole('button', { name: 'Criar boneco' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('pelo menos 2 caracteres');
+
+    fireEvent.change(screen.getByLabelText('Nome'), { target: { value: 'Zé Neon' } });
+    fireEvent.change(screen.getByLabelText('Falas prontas'), { target: { value: 'Fala comigo, {nome}!' } });
+    const png = new File([new Uint8Array([1, 2, 3])], 'ze-parado.png', { type: 'image/png' });
+    fireEvent.change(screen.getByLabelText('Escolher arquivo: parado'), { target: { files: [png] } });
+    expect(screen.getByText('ze-parado.png')).toBeInTheDocument();
+    // Formato errado mostra o erro e não troca o arquivo.
+    fireEvent.change(screen.getByLabelText('Escolher arquivo: falando'), { target: { files: [new File(['x'], 'a.pdf', { type: 'application/pdf' })] } });
+    expect(await screen.findByText(/Formato não aceito/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Criar boneco' }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Bonecos' })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: 'Zé Neon' })).toBeInTheDocument();
+    expect(screen.getByText('1 fala pronta')).toBeInTheDocument();
+
+    fireEvent.click(within(screen.getByRole('navigation', { name: 'Seções do Palco' })).getByRole('link', { name: 'Palco' }));
+    const stage = await screen.findByRole('group', { name: 'Palco: Papo Reto' });
+    expect(within(stage).getByText('Zé Neon')).toBeInTheDocument();
+    expect(screen.getByLabelText('Anfitrião')).toHaveDisplayValue('Zé Neon');
+
+    fireEvent.change(screen.getByLabelText('Testar um pedido'), { target: { value: 'tudo bem?' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar ao palco' }));
     expect(within(stage).getByText('@voce')).toBeInTheDocument();
-    expect(within(stage).getByText(/qual o melhor jogo\?/)).toBeInTheDocument();
-    expect(field).toHaveValue('');
+    // Vai direto para a resposta. Leitores de tela recebem a fala inteira, com o nome do boneco.
+    fireEvent.click(screen.getByRole('button', { name: 'Pular' }));
+    expect(await within(stage).findByText('Zé Neon: Fala comigo, Voce!')).toBeInTheDocument();
   });
 
-  it('apresenta um anfitrião do elenco no palco', async () => {
-    setup('/palco');
-    await ready();
-    fireEvent.click(await screen.findByRole('button', { name: 'Ver no palco: Patrick Super Saiyajin' }));
-    const stage = screen.getByRole('group', { name: 'Palco: Apresentação' });
-    expect(within(stage).getByRole('img', { name: 'Patrick Super Saiyajin' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 2, name: 'Apresentação do anfitrião' })).toBeInTheDocument();
+  it('tira o boneco de uma vaga e exclui o boneco', async () => {
+    setup('/palco/bonecos/novo');
+    fireEvent.change(await screen.findByLabelText('Nome'), { target: { value: 'Bia Robô' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Criar boneco' }));
+    await screen.findByRole('link', { name: 'Bia Robô' });
+
+    fireEvent.click(within(screen.getByRole('navigation', { name: 'Seções do Palco' })).getByRole('link', { name: 'Palco' }));
+    const select = await screen.findByLabelText('Anfitrião');
+    fireEvent.change(select, { target: { value: '' } });
+    expect(within(screen.getByRole('group', { name: 'Palco: Papo Reto' })).getByText('Anfitrião: sem boneco')).toBeInTheDocument();
+
+    fireEvent.click(within(screen.getByRole('navigation', { name: 'Seções do Palco' })).getByRole('link', { name: 'Bonecos' }));
+    fireEvent.click(await screen.findByRole('link', { name: 'Editar Bia Robô' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Excluir boneco' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Excluir' }));
+    expect(await screen.findByText('Nenhum boneco ainda')).toBeInTheDocument();
+  });
+
+  it('avisa quando o boneco do endereço não existe', async () => {
+    setup('/palco/bonecos/nao-existe');
+    expect(await screen.findByText('Boneco não encontrado')).toBeInTheDocument();
   });
 });

@@ -64,6 +64,11 @@ const TITLES: Record<string, string> = {
 /** Título e breadcrumb da rota atual. `gameName` resolve a página de configuração de um jogo. */
 export function getPageMeta(pathname: string, gameName?: string): PageMeta {
   const clean = pathname.replace(/\/+$/, '') || '/';
+  if (clean === '/palco/bonecos') return { title: 'Bonecos', crumbs: [{ label: 'Palco', to: '/palco' }, { label: 'Bonecos' }] };
+  if (clean.startsWith('/palco/bonecos/')) {
+    const title = clean === '/palco/bonecos/novo' ? 'Novo boneco' : 'Editar boneco';
+    return { title, crumbs: [{ label: 'Palco', to: '/palco' }, { label: 'Bonecos', to: '/palco/bonecos' }, { label: title }] };
+  }
   if (clean.startsWith('/game-hub/') && gameName) {
     return { title: 'Configurar jogo', crumbs: [{ label: 'Game Hub', to: '/game-hub' }, { label: gameName }] };
   }

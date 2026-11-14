@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { Gift, Megaphone } from 'lucide-react';
 import { Avatar } from '../../components/avatar/AvatarSvg';
+import { DEFAULT_COLOR, DEFAULT_VOICE, type Boneco, type BonecoVoice } from '../../domain/bonecos';
 import { getGift } from '../../domain/gifts';
-import { beatMs, getHost, speechMs, type Beat, type HostId } from '../../domain/stage';
-import { HostArt } from './HostArt';
+import { beatMs, speechMs, type Beat } from '../../domain/stage';
+import { BonecoView } from './BonecoView';
 import './stage.css';
 
 const TICK_MS = 40;
@@ -12,14 +13,15 @@ function prefersReducedMotion(): boolean {
   return typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
+export const CAN_SPEAK = typeof window !== 'undefined' && 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined';
+
 /** Fala o texto com a voz do navegador. Devolve uma função que cancela. */
-function speakAloud(text: string, hostId: HostId, onEnd: () => void): () => void {
+export function speakAloud(text: string, voice: BonecoVoice, onEnd: () => void = () => undefined): () => void {
   const synth = window.speechSynthesis;
-  const host = getHost(hostId);
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = 'pt-BR';
-  utterance.pitch = host.pitch;
-  utterance.rate = host.rate;
+  utterance.pitch = voice.pitch;
+  utterance.rate = voice.rate;
   utterance.onend = onEnd;
   utterance.onerror = onEnd;
   synth.cancel();
@@ -33,9 +35,14 @@ function speakAloud(text: string, hostId: HostId, onEnd: () => void): () => void
 
 /**
  * Toca um roteiro em laço: avança de momento em momento e revela a legenda aos poucos.
- * Trocar o roteiro (outra lista de `beats`) recomeça do início.
+ * Trocar o roteiro (outra lista de `beats`) recomeça do início. `voices` traz a voz de cada vaga;
+ * `null` deixa o palco mudo.
  */
-export function useStagePlayer(beats: Beat[], playing: boolean, voice: boolean) {
+export function useStagePlayer(beats: Beat[], playing: boolean, voices: readonly BonecoVoice[] | null) {
+  // A voz é lida na hora de falar: trocar o boneco de uma vaga não reinicia a fala atual.
+  const voicesRef = useRef(voices);
+  voicesRef.current = voices;
+  const voice = voices !== null;
   const [index, setIndex] = useState(0);
   const [shown, setShown] = useState(0);
   /** Muda a cada "recomeçar", para repetir a fala mesmo quando o roteiro já está no início. */
@@ -60,11 +67,11 @@ export function useStagePlayer(beats: Beat[], playing: boolean, voice: boolean) 
     }
 
     // Com a voz ligada, a fala termina quando o navegador termina de falar (com um teto de segurança).
-    const useVoice = isSpeech && voice && typeof window !== 'undefined' && 'speechSynthesis' in window;
+    const useVoice = isSpeech && voice && CAN_SPEAK;
     let stopVoice: (() => void) | undefined;
     let tail: ReturnType<typeof setTimeout> | undefined;
     if (useVoice && beat.kind === 'fala') {
-      stopVoice = speakAloud(beat.text, beat.hostId, () => {
+      stopVoice = speakAloud(beat.text, voicesRef.current?.[beat.slot] ?? DEFAULT_VOICE, () => {
         tail = setTimeout(advance, 700);
       });
     }
@@ -155,20 +162,24 @@ function PollCard({ beat }: { beat: Extract<Beat, { kind: 'enquete' }> }) {
   );
 }
 
+/** Uma vaga do quadro em cena: o papel dela e o boneco que a ocupa (ou nenhum). */
+export interface StageSlotView {
+  label: string;
+  boneco: Boneco | null;
+}
+
 export interface StageSceneProps {
   title: string;
   command?: string;
-  hostIds: HostId[];
+  slots: StageSlotView[];
   beats: Beat[];
   /** Momento atual do roteiro e quantos caracteres da fala já apareceram (vêm de `useStagePlayer`). */
   index: number;
   shown: number;
   playing: boolean;
-  /** Mostrado no lugar do pedido quando o roteiro não tem pedido nem aviso (apresentação do anfitrião). */
-  fallback?: ReactNode;
 }
 
-export function StageScene({ title, command, hostIds, beats, index, shown, playing, fallback }: StageSceneProps) {
+export function StageScene({ title, command, slots, beats, index, shown, playing }: StageSceneProps) {
   const player = { index: Math.min(index, Math.max(0, beats.length - 1)), shown };
   const beat = beats[player.index] ?? null;
   const speech = beat?.kind === 'fala' ? beat : null;
@@ -176,12 +187,13 @@ export function StageScene({ title, command, hostIds, beats, index, shown, playi
   const request = context?.kind === 'pedido' ? context : null;
   const queue = useMemo(() => upcoming(beats, player.index, request?.username ?? null), [beats, player.index, request]);
   const hasRequests = useMemo(() => beats.some((b) => b.kind === 'pedido'), [beats]);
-  const speaker = speech ? getHost(speech.hostId) : null;
+  const speakerSlot = speech ? slots[speech.slot] : null;
+  const speaker = speakerSlot ? speakerSlot.boneco?.name ?? speakerSlot.label : null;
   const talking = Boolean(speech && playing && player.shown < speech.text.length);
 
   return (
     <div className="pstage" role="group" aria-label={`Palco: ${title}`}>
-      <div className={`pstage__canvas${hostIds.length > 1 ? ' pstage__canvas--duo' : ''}`}>
+      <div className={`pstage__canvas${slots.length > 1 ? ' pstage__canvas--duo' : ''}`}>
         <header className="pstage__top">
           <span className="pstage__format">{title}</span>
           {command ? <span className="pstage__cmd">Participe: {command}</span> : null}
@@ -189,17 +201,16 @@ export function StageScene({ title, command, hostIds, beats, index, shown, playi
         </header>
 
         <div className="pstage__cast">
-          {hostIds.map((id) => {
-            const host = getHost(id);
-            const active = speech?.hostId === id;
+          {slots.map((slot, i) => {
+            const active = speech?.slot === i;
             return (
               <figure
-                key={id}
+                key={i}
                 className={`pstage__host${active ? ' is-speaking' : ''}${speech && !active ? ' is-waiting' : ''}`}
-                style={{ '--plate': host.backdrop } as CSSProperties}
+                style={{ '--plate': slot.boneco?.color ?? DEFAULT_COLOR } as CSSProperties}
               >
-                <HostArt id={id} speaking={active && talking} />
-                <figcaption>{host.short}</figcaption>
+                <BonecoView boneco={slot.boneco} speaking={active && talking} emptyLabel={`${slot.label}: sem boneco`} />
+                <figcaption>{slot.boneco ? slot.boneco.name : slot.label}</figcaption>
               </figure>
             );
           })}
@@ -215,15 +226,13 @@ export function StageScene({ title, command, hostIds, beats, index, shown, playi
               <Megaphone aria-hidden />
               <p>{context.text}</p>
             </div>
-          ) : (
-            fallback
-          )}
+          ) : null}
         </div>
 
         <div className={`pstage__caption${speech ? '' : ' is-empty'}`} aria-hidden>
           {speech && speaker ? (
             <>
-              <span className="pstage__speaker">{speaker.short}</span>
+              <span className="pstage__speaker">{speaker}</span>
               <p>
                 {speech.text.slice(0, player.shown)}
                 <span className="pstage__ghost">{speech.text.slice(player.shown)}</span>
@@ -244,7 +253,7 @@ export function StageScene({ title, command, hostIds, beats, index, shown, playi
 
       {/* Leitores de tela recebem a fala inteira de uma vez, não letra por letra. */}
       <p className="sr-only" role="status">
-        {speech && speaker ? `${speaker.short}: ${speech.text}` : ''}
+        {speech && speaker ? `${speaker}: ${speech.text}` : ''}
       </p>
     </div>
   );

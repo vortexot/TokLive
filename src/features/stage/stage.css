@@ -78,7 +78,7 @@
 .pstage__host.is-waiting {
   filter: saturate(0.6) brightness(0.7);
 }
-.pstage__host .host {
+.pstage__host .boneco-view {
   width: 100%;
   height: 100%;
 }
@@ -326,41 +326,60 @@
   }
 }
 
-/* Anfitriões: a boca abre e fecha enquanto a fala toca */
-.host {
-  display: block;
+/* Boneco em cena: os arquivos do criador, ancorados embaixo da placa */
+.boneco-view {
+  position: relative;
+  width: 100%;
+  height: 100%;
 }
-.host-mouth {
-  transform-box: fill-box;
-  transform-origin: center;
-  transform: scaleY(0.3);
+.boneco-view__media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  user-select: none;
 }
-.host--speaking .host-mouth {
-  animation: host-talk 280ms ease-in-out infinite alternate;
+.boneco-view__media.is-hidden {
+  visibility: hidden;
 }
-.host--speaking .host-jaw {
-  animation: host-jaw 280ms ease-in-out infinite alternate;
+/* Sem arquivo de fala, o boneco parado balança de leve enquanto fala */
+.boneco-view.is-bobbing .boneco-view__media {
+  transform-origin: center bottom;
+  animation: boneco-bob 300ms ease-in-out infinite alternate;
 }
-@keyframes host-talk {
-  from {
-    transform: scaleY(0.25);
-  }
+@keyframes boneco-bob {
   to {
-    transform: scaleY(1.05);
-  }
-}
-@keyframes host-jaw {
-  to {
-    transform: rotate(13deg);
+    transform: translateY(-1.5%) scaleY(1.02);
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .host--speaking .host-mouth {
-    transform: scaleY(1);
+  .boneco-view.is-bobbing .boneco-view__media {
+    animation: none;
   }
-  .host--speaking .host-jaw {
-    transform: rotate(10deg);
-  }
+}
+.boneco-view--empty,
+.boneco-view__missing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  height: 100%;
+  color: var(--text-3);
+  font-size: 1.05em;
+  font-weight: 600;
+  text-align: center;
+}
+.boneco-view--empty {
+  border: 1px dashed var(--line-strong);
+}
+.boneco-view--empty svg,
+.boneco-view__missing svg {
+  width: 2.4em;
+  height: 2.4em;
+  stroke-width: 1.5;
 }
 
 /* ---------- Página do Palco ---------- */
@@ -460,7 +479,7 @@
 }
 .cast-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(12.5rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
   gap: var(--s-4);
   margin-top: var(--s-4);
 }
@@ -477,20 +496,32 @@
 .cast-card:hover {
   border-color: var(--line-strong);
 }
-.cast-card--on {
-  border-color: var(--red-deep);
-}
 .cast-card__art {
   position: relative;
   aspect-ratio: 5 / 4;
   background: var(--plate);
   clip-path: polygon(0 0, calc(100% - var(--notch)) 0, 100% var(--notch), 100% 100%, 0 100%);
 }
-.cast-card__art .host {
+.cast-card__art {
+  display: block;
+}
+.cast-card__art .boneco-view {
   position: absolute;
-  inset: var(--s-3) 0 0;
-  width: 100%;
-  height: calc(100% - var(--s-3));
+  inset: var(--s-3) var(--s-3) 0;
+  width: auto;
+  height: auto;
+}
+.cast-card__name a {
+  text-decoration: none;
+}
+.cast-card__name a:hover {
+  text-decoration: underline;
+}
+.cast-card__text {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .cast-card__body {
   display: flex;
@@ -526,23 +557,233 @@
   padding-top: var(--s-2);
 }
 
-/* Apresentação do anfitrião, no lugar do pedido */
-.pstage-bio__name {
-  font-family: var(--font-display);
-  font-size: 2.1em;
-  font-weight: 700;
-  line-height: 1.05;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-}
-.pstage-bio__mix {
-  margin-top: 0.4em;
-  color: var(--text-2);
-  font-size: 1.2em;
-}
-
 @container page (max-width: 980px) {
   .palco__main {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Abas do Palco (links) */
+.palco-tabs {
+  margin-bottom: calc(var(--s-1) * -1);
+}
+.palco-tabs .tabs__tab {
+  text-decoration: none;
+}
+.palco-tabs .tabs__tab[aria-current='page'] {
+  color: var(--text);
+}
+.palco-tabs .tabs__tab[aria-current='page']::after {
+  content: '';
+  position: absolute;
+  left: 0.6rem;
+  right: 0.6rem;
+  bottom: -1px;
+  height: 2px;
+  background: var(--red);
+}
+
+.palco__aside {
+  display: grid;
+  gap: var(--s-4);
+}
+.palco__warn {
+  color: var(--red-ink);
+  font-size: var(--fs-sm);
+}
+
+/* Lista de bonecos */
+.bonecos__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3) var(--s-5);
+}
+.bonecos__count {
+  margin-bottom: calc(var(--s-4) * -1);
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+.bonecos__tips {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: var(--s-4) var(--s-5);
+  margin: 0;
+  padding: var(--s-4);
+}
+.bonecos__tips dt {
+  font-weight: 600;
+}
+.bonecos__tips dd {
+  margin: var(--s-1) 0 0;
+  color: var(--text-2);
+}
+
+/* Cadastro de boneco */
+.boneco-edit__back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  justify-self: start;
+  color: var(--text-2);
+  font-weight: 600;
+  text-decoration: none;
+}
+.boneco-edit__back:hover {
+  color: var(--text);
+}
+.boneco-edit {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(16rem, 1fr);
+  gap: var(--s-5);
+  align-items: start;
+}
+.boneco-edit__form {
+  display: grid;
+  gap: var(--s-4);
+}
+.boneco-edit__body {
+  display: grid;
+  gap: var(--s-5);
+  padding: var(--s-4);
+}
+.boneco-edit__color-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  margin-top: var(--s-1);
+}
+.boneco-edit__color-row input[type='color'] {
+  width: 3rem;
+  height: 2.5rem;
+  padding: 3px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-control);
+  border-radius: var(--r-2);
+  cursor: pointer;
+}
+.boneco-edit__hex {
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.boneco-edit__foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+.boneco-edit__delete {
+  margin-left: auto;
+}
+.boneco-edit__preview {
+  position: sticky;
+  top: calc(var(--header-h) + var(--s-4));
+}
+.boneco-edit__plate {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  margin: var(--s-4) var(--s-4) 0;
+  padding: var(--s-7) var(--s-4) 0;
+  background: var(--plate);
+  clip-path: polygon(0 0, calc(100% - var(--notch)) 0, 100% var(--notch), 100% 100%, 0 100%);
+}
+.boneco-edit__plate-name {
+  position: absolute;
+  left: var(--s-3);
+  top: var(--s-2);
+  color: #f5f5f5;
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.boneco-edit__preview-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  padding: var(--s-3) var(--s-4) var(--s-4);
+}
+.boneco-edit__sample {
+  display: grid;
+  gap: var(--s-1);
+  margin: 0 var(--s-4) var(--s-4);
+  padding-top: var(--s-3);
+  border-top: 1px dashed var(--line-strong);
+}
+.boneco-edit__sample span {
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+/* Escolha de arquivo */
+.media-pick + .media-pick {
+  padding-top: var(--s-5);
+  border-top: 1px dashed var(--line-strong);
+}
+.media-pick__head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+.media-pick__flag {
+  color: var(--warn);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+.media-pick__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-3);
+  margin-top: var(--s-3);
+}
+.media-pick__file {
+  display: flex;
+  flex: 1 1 12rem;
+  align-items: center;
+  gap: var(--s-2);
+  min-width: 0;
+}
+.media-pick__file svg {
+  flex: none;
+  color: var(--text-3);
+}
+.media-pick__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.media-pick__size {
+  flex: none;
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+}
+.media-pick__file--none {
+  color: var(--text-3);
+}
+.media-pick__btn {
+  position: relative;
+  cursor: pointer;
+}
+.media-pick__btn:focus-within {
+  outline: 2px solid var(--red-ink);
+  outline-offset: 2px;
+}
+
+@container page (max-width: 900px) {
+  .boneco-edit {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .boneco-edit__preview {
+    position: static;
+  }
+  .boneco-edit__plate {
+    width: min(100% - 2 * var(--s-4), 18rem);
+    aspect-ratio: 1;
+    padding-top: var(--s-6);
+  }
+}
+

@@ -5,6 +5,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
   type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
 } from 'react';
 import { AlertCircle, Search, type LucideIcon } from 'lucide-react';
 import './ui.css';
@@ -46,6 +47,44 @@ export function TextField({
           {...rest}
         />
       </div>
+      {hint && !error ? (
+        <p className="field__hint" id={`${id}-hint`}>
+          {hint}
+        </p>
+      ) : null}
+      {error ? (
+        <p className="field__error" id={`${id}-err`} role="alert">
+          <AlertCircle size={14} aria-hidden />
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/** Campo de texto com várias linhas, com o mesmo rótulo, dica e erro do TextField. */
+export function TextAreaField({
+  label,
+  hint,
+  error,
+  hideLabel,
+  className,
+  ...rest
+}: FieldShell & TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  const id = useId();
+  const describedBy = [hint ? `${id}-hint` : '', error ? `${id}-err` : ''].filter(Boolean).join(' ') || undefined;
+  return (
+    <div className="field">
+      <label className={hideLabel ? 'sr-only' : 'field__label'} htmlFor={id}>
+        {label}
+      </label>
+      <textarea
+        id={id}
+        className={`input input--area${className ? ` ${className}` : ''}`}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy}
+        {...rest}
+      />
       {hint && !error ? (
         <p className="field__hint" id={`${id}-hint`}>
           {hint}

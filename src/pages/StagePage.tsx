@@ -1,60 +1,94 @@
-import { useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react';
-import { AudioLines, Pause, Play, RotateCcw, Send, SkipForward } from 'lucide-react';
-import { Button } from '../components/ui/Button';
-import { SwitchRow, TextField } from '../components/ui/Controls';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { Pause, Play, Plus, RotateCcw, Send, SkipForward } from 'lucide-react';
+import { Button, ButtonLink } from '../components/ui/Button';
+import { SelectField, SwitchRow, TextField } from '../components/ui/Controls';
 import { KeyValue } from '../components/ui/Misc';
-import { DEMO_SCRIPTS, HOSTS, STAGE_FORMATS, getHost, getStageFormat, introScript, scriptedReply, type Beat, type HostId, type StageFormatId } from '../domain/stage';
-import { HostArt } from '../features/stage/HostArt';
-import { StageScene, useStagePlayer } from '../features/stage/StageScene';
+import { DEFAULT_VOICE, type Boneco } from '../domain/bonecos';
+import { DEMO_SCRIPTS, STAGE_FORMATS, getStageFormat, isStageFormatId, resolveCast, scriptedReply, type Beat, type StageCast, type StageFormatId } from '../domain/stage';
+import { PalcoTabs } from '../features/stage/PalcoTabs';
+import { CAN_SPEAK, StageScene, useStagePlayer, type StageSlotView } from '../features/stage/StageScene';
+import { useBonecos } from '../services/bonecoStore';
+import { loadJson, saveJson } from '../services/storage';
 import '../features/stage/stage.css';
 
-/** O que está em cena: um quadro (com um pedido de teste opcional na frente do roteiro) ou a apresentação de um anfitrião. */
-type Show = { kind: 'quadro'; id: StageFormatId; extra: Beat[] } | { kind: 'anfitriao'; id: HostId };
+const CAST_KEY = 'palco-elenco';
+const FORMAT_KEY = 'palco-quadro';
 
-const CAN_SPEAK = typeof window !== 'undefined' && 'speechSynthesis' in window;
+/** Escolhas do criador por vaga: id do boneco, ou "" para "nenhum". Vagas nunca mexidas ficam de fora. */
+type SavedCast = Partial<Record<StageFormatId, string[]>>;
 
 export default function StagePage() {
-  const [show, setShow] = useState<Show>({ kind: 'quadro', id: 'papo-reto', extra: [] });
+  const bonecos = useBonecos();
+  const [formatId, setFormatId] = useState<StageFormatId>(() => {
+    const saved = loadJson<string>(FORMAT_KEY);
+    return isStageFormatId(saved) ? saved : 'papo-reto';
+  });
+  const [savedCast, setSavedCast] = useState<SavedCast>(() => loadJson<SavedCast>(CAST_KEY) ?? {});
+  const [extra, setExtra] = useState<Beat[]>([]);
   const [playing, setPlaying] = useState(true);
   const [voice, setVoice] = useState(false);
   const [draft, setDraft] = useState('');
-  const stageRef = useRef<HTMLDivElement>(null);
 
-  const format = show.kind === 'quadro' ? getStageFormat(show.id) : null;
-  const beats = useMemo(() => (show.kind === 'quadro' ? [...show.extra, ...DEMO_SCRIPTS[show.id]] : introScript(show.id)), [show]);
-  const player = useStagePlayer(beats, playing, voice);
+  const format = getStageFormat(formatId);
+  const cast: StageCast = useMemo(() => resolveCast(savedCast, bonecos.items), [savedCast, bonecos.items]);
+  const byId = useMemo(() => new Map(bonecos.items.map((b) => [b.id, b])), [bonecos.items]);
+  const slots: StageSlotView[] = format.slots.map((slot, i) => {
+    const id = cast[formatId][i];
+    return { label: slot.label, boneco: (id && byId.get(id)) || null };
+  });
+  const lead: Boneco | null = slots[0]?.boneco ?? null;
 
-  const open = (next: Show) => {
-    setShow(next);
+  const beats = useMemo(() => [...extra, ...DEMO_SCRIPTS[formatId]], [extra, formatId]);
+  const voices = useMemo(() => (voice ? slots.map((s) => s.boneco?.voice ?? DEFAULT_VOICE) : null), [voice, slots]);
+  const player = useStagePlayer(beats, playing, voices);
+
+  useEffect(() => {
+    saveJson(FORMAT_KEY, formatId);
+  }, [formatId]);
+
+  const chooseFormat = (id: StageFormatId) => {
+    setFormatId(id);
+    setExtra([]);
     setPlaying(true);
+  };
+
+  const chooseBoneco = (slot: number, id: string) => {
+    setSavedCast((prev) => {
+      const row = [...(prev[formatId] ?? cast[formatId].map((x) => x ?? ''))];
+      row[slot] = id;
+      // Um boneco não ocupa duas vagas do mesmo quadro: a outra vaga fica vazia.
+      row.forEach((other, i) => {
+        if (i !== slot && id && other === id) row[i] = '';
+      });
+      const next = { ...prev, [formatId]: row };
+      saveJson(CAST_KEY, next);
+      return next;
+    });
   };
 
   const sendDraft = (event: FormEvent) => {
     event.preventDefault();
-    if (!format) return;
-    const extra = scriptedReply(format.id, 'voce', draft);
-    if (!extra.length) return;
-    open({ kind: 'quadro', id: format.id, extra });
+    const reply = scriptedReply(formatId, 'voce', draft, lead?.phrases ?? []);
+    if (!reply.length) return;
+    setExtra(reply);
+    setPlaying(true);
     setDraft('');
   };
 
-  const present = (id: HostId) => {
-    open({ kind: 'anfitriao', id });
-    stageRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
-  };
-
-  const soloHost = show.kind === 'anfitriao' ? getHost(show.id) : null;
+  const noBonecos = bonecos.status === 'ready' && bonecos.items.length === 0;
 
   return (
     <div className="palco">
+      <PalcoTabs />
+
       <p className="palco__note">
-        Amostra visual do Palco, a área em que o espectador conversa com um anfitrião em vez de jogar. As falas são de roteiro: não há IA nem LIVE conectada. Os
-        anfitriões são paródias feitas para esta amostra, e os personagens originais pertencem aos seus donos.
+        Área em que o espectador conversa com um boneco em vez de jogar. Os bonecos são os que você cadastra na aba Bonecos. Nesta demonstração as
+        falas são de roteiro: não há IA nem LIVE conectada.
       </p>
 
       <div className="chip-row" role="group" aria-label="Escolher quadro">
         {STAGE_FORMATS.map((f) => (
-          <button key={f.id} type="button" className="chip" aria-pressed={format?.id === f.id} onClick={() => open({ kind: 'quadro', id: f.id, extra: [] })}>
+          <button key={f.id} type="button" className="chip" aria-pressed={formatId === f.id} onClick={() => chooseFormat(f.id)}>
             {f.name}
           </button>
         ))}
@@ -62,25 +96,7 @@ export default function StagePage() {
 
       <div className="palco__main">
         <section aria-label="Palco">
-          <div ref={stageRef} className="palco__stage">
-            <StageScene
-              title={format?.name ?? 'Apresentação'}
-              command={format?.command}
-              hostIds={format?.hostIds ?? (soloHost ? [soloHost.id] : [])}
-              beats={beats}
-              index={player.index}
-              shown={player.shown}
-              playing={playing}
-              fallback={
-                soloHost ? (
-                  <div className="pstage-card">
-                    <p className="pstage-bio__name">{soloHost.name}</p>
-                    <p className="pstage-bio__mix">{soloHost.mix}</p>
-                  </div>
-                ) : null
-              }
-            />
-          </div>
+          <StageScene title={format.name} command={format.command} slots={slots} beats={beats} index={player.index} shown={player.shown} playing={playing} />
 
           <div className="palco__controls">
             <Button variant="primary" icon={playing ? Pause : Play} onClick={() => setPlaying((p) => !p)}>
@@ -95,7 +111,7 @@ export default function StagePage() {
             <div className="palco__voice">
               <SwitchRow
                 label="Voz do navegador"
-                hint={CAN_SPEAK ? 'Demonstração: usa a voz instalada no seu navegador, não a voz final do anfitrião.' : 'Este navegador não oferece voz sintetizada.'}
+                hint={CAN_SPEAK ? 'Demonstração: usa a voz do seu navegador, com o tom e a velocidade de cada boneco.' : 'Este navegador não oferece voz sintetizada.'}
                 checked={voice && CAN_SPEAK}
                 onChange={setVoice}
                 disabled={!CAN_SPEAK}
@@ -103,30 +119,70 @@ export default function StagePage() {
             </div>
           </div>
 
-          {format ? (
-            <form className="palco__try" onSubmit={sendDraft}>
-              <TextField
-                label="Testar um pedido"
-                placeholder={`Escreva como um espectador. O comando ${format.command} entra sozinho`}
-                value={draft}
-                maxLength={140}
-                onChange={(e) => setDraft(e.target.value)}
-              />
-              <Button type="submit" icon={Send} disabled={!draft.trim()}>
-                Enviar ao palco
-              </Button>
-              <p className="palco__try-hint">A resposta sai de uma lista de frases prontas do anfitrião. Com a IA ligada, ela seria escrita na hora.</p>
-            </form>
-          ) : null}
+          <form className="palco__try" onSubmit={sendDraft}>
+            <TextField
+              label="Testar um pedido"
+              placeholder={`Escreva como um espectador. O comando ${format.command} entra sozinho`}
+              value={draft}
+              maxLength={140}
+              onChange={(e) => setDraft(e.target.value)}
+            />
+            <Button type="submit" icon={Send} disabled={!draft.trim()}>
+              Enviar ao palco
+            </Button>
+            <p className="palco__try-hint">
+              {lead?.phrases.length
+                ? `A resposta sai das falas prontas de ${lead.name}. Com a IA ligada, ela seria escrita na hora.`
+                : 'Sem falas prontas no boneco da vaga, a resposta usa frases padrão. Cadastre as falas dele na aba Bonecos.'}
+            </p>
+          </form>
         </section>
 
-        <aside className="panel" aria-labelledby="palco-info">
-          <header className="panel__head">
-            <h2 className="panel__title" id="palco-info">
-              {format ? format.name : 'Apresentação do anfitrião'}
-            </h2>
-          </header>
-          {format ? (
+        <div className="palco__aside">
+          <section className="panel" aria-labelledby="palco-cast">
+            <header className="panel__head">
+              <h2 className="panel__title" id="palco-cast">
+                Em cena
+              </h2>
+              <ButtonLink to="/palco/bonecos/novo" size="sm" variant="ghost" icon={Plus}>
+                Novo boneco
+              </ButtonLink>
+            </header>
+            <div className="palco-info__body">
+              {bonecos.status === 'error' ? (
+                <p className="palco__warn" role="alert">
+                  {bonecos.error}
+                </p>
+              ) : noBonecos ? (
+                <p className="palco-info__summary">
+                  Você ainda não tem bonecos. Crie os seus com a IA que preferir e cadastre na aba Bonecos. Até lá, o palco mostra as vagas vazias.
+                </p>
+              ) : null}
+              {format.slots.map((slot, i) => (
+                <SelectField
+                  key={`${formatId}-${i}`}
+                  label={slot.label}
+                  value={cast[formatId][i] ?? ''}
+                  disabled={bonecos.status !== 'ready' || noBonecos}
+                  onChange={(e) => chooseBoneco(i, e.target.value)}
+                >
+                  <option value="">Nenhum</option>
+                  {bonecos.items.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </SelectField>
+              ))}
+            </div>
+          </section>
+
+          <section className="panel" aria-labelledby="palco-info">
+            <header className="panel__head">
+              <h2 className="panel__title" id="palco-info">
+                Como funciona: {format.name}
+              </h2>
+            </header>
             <div className="palco-info__body">
               <p className="palco-info__summary">{format.summary}</p>
               <div>
@@ -140,62 +196,13 @@ export default function StagePage() {
               <KeyValue
                 items={[
                   { label: 'Comando', value: format.command },
-                  { label: format.hostIds.length > 1 ? 'Anfitriões' : 'Anfitrião', value: format.hostIds.map((id) => getHost(id).short).join(' e ') },
                   { label: 'Presente Meteoro', value: format.special },
                 ]}
               />
             </div>
-          ) : soloHost ? (
-            <div className="palco-info__body">
-              <p className="palco-info__summary">{soloHost.personality}</p>
-              <KeyValue
-                items={[
-                  { label: 'Mistura', value: soloHost.mix },
-                  { label: 'Voz', value: soloHost.voice },
-                  { label: 'Quadros', value: STAGE_FORMATS.filter((f) => f.hostIds.includes(soloHost.id)).map((f) => f.name).join(', ') },
-                ]}
-              />
-            </div>
-          ) : null}
-        </aside>
-      </div>
-
-      <section aria-labelledby="palco-elenco">
-        <h2 className="palco__section-title" id="palco-elenco">
-          Elenco
-        </h2>
-        <p className="palco__section-sub">Cada anfitrião tem personalidade, jeito de falar e voz próprios. Coloque um deles no palco para ver a apresentação.</p>
-        <div className="cast-grid">
-          {HOSTS.map((host) => {
-            const on = soloHost?.id === host.id;
-            return (
-              <article key={host.id} className={`cast-card${on ? ' cast-card--on' : ''}`} aria-labelledby={`host-${host.id}`}>
-                <div className="cast-card__art" style={{ '--plate': host.backdrop } as CSSProperties}>
-                  <HostArt id={host.id} decorative />
-                </div>
-                <div className="cast-card__body">
-                  <div>
-                    <h3 className="cast-card__name" id={`host-${host.id}`}>
-                      {host.name}
-                    </h3>
-                    <p className="cast-card__mix">{host.mix}</p>
-                  </div>
-                  <p className="cast-card__text">{host.personality}</p>
-                  <p className="cast-card__voice">
-                    <AudioLines size={15} aria-hidden />
-                    {host.voice}
-                  </p>
-                  <div className="cast-card__actions">
-                    <Button size="sm" icon={Play} onClick={() => present(host.id)} aria-label={`Ver no palco: ${host.name}`}>
-                      Ver no palco
-                    </Button>
-                  </div>
-                </div>
-              </article>
-            );
-          })}
+          </section>
         </div>
-      </section>
+      </div>
     </div>
   );
 }

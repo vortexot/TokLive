@@ -1,6 +1,6 @@
 # Palco: área de conversa falada
 
-> **Estado: proposta, com uma amostra visual.** A página **Palco** do painel (`#/palco`) mostra os seis quadros com falas de roteiro e um elenco de paródias (seção 16). Fila real, IA, voz gerada, moderação e overlay ainda não existem. Os pontos que dependem de teste estão marcados como "não verificado".
+> **Estado: proposta, com uma amostra funcional.** O painel já tem o Palco (seis quadros com falas de roteiro) e a aba Bonecos, onde o criador cadastra os próprios personagens (seção 16). Fila real, IA, voz gerada, moderação e overlay ainda não existem. Os pontos que dependem de teste estão marcados como "não verificado".
 
 ## 1. Resumo
 
@@ -525,36 +525,48 @@ O desenho aproveita ideias do repositório `Pablo672-sys/Live-do-Abismo-Thiago-R
 
 O que o Palco **não** aproveita: o renderizador em vídeo com transmissão direta por RTMP (o TokArena usa overlay no OBS), o XTTS local com GPU como requisito, e o monitor do TikTok próprio (o TokArena já tem o worker).
 
-## 16. Amostra visual (o que já existe no código)
+## 16. O que já existe no código
 
-A página **Palco** do painel (`#/palco`, item "Palco" no menu) é uma amostra para ver e mostrar a ideia. Ela não está ligada ao motor de eventos nem à LIVE.
+O Palco tem duas abas no painel. Nenhuma das duas está ligada ao motor de eventos nem à LIVE ainda.
+
+### Aba Palco (`#/palco`)
+
+- Os seis quadros, cada um com **vagas**: Anfitrião (Papo Reto e Correio), Oráculo, Narrador, Acusação e Defesa (Tribunal), Lado 1 e Lado 2 (Duelo).
+- No painel "Em cena", o criador escolhe qual dos bonecos dele ocupa cada vaga. Sem escolha, as vagas são preenchidas com os bonecos na ordem de cadastro. A escolha fica salva no navegador.
+- Os roteiros de demonstração usam falas neutras, que servem para qualquer boneco.
+- "Testar um pedido" responde com uma das falas prontas do boneco da primeira vaga. Sem falas cadastradas, usa frases padrão.
+- A voz do navegador (opcional) usa o tom e a velocidade de cada boneco.
+
+### Aba Bonecos (`#/palco/bonecos`)
+
+O criador cadastra os próprios bonecos, feitos com a IA que preferir. O TokArena não traz nenhum personagem pronto.
+
+| Campo | Para que serve |
+|---|---|
+| Nome | Legenda do palco e listas do painel |
+| Personalidade e jeito de falar | Vai para a IA quando ela for ligada (seção 4.3, campo `persona`) |
+| Cor da placa | Fundo atrás do boneco em cena |
+| Arquivo "parado" | Imagem ou vídeo em loop do boneco quieto |
+| Arquivo "falando" (opcional) | Substitui o "parado" enquanto o boneco fala. Sem ele, o boneco parado balança de leve |
+| Falas prontas | Uma por linha, com `{nome}`. Usadas na demonstração e como reserva quando a IA falhar |
+| Tom e velocidade da voz | Voz do navegador na demonstração |
+
+Arquivos aceitos: PNG, WebP, GIF, JPG, WebM e MP4, até 25 MB cada. O formulário tem prévia na placa, com "Simular fala" e "Ouvir voz".
+
+**Onde ficam guardados:** no IndexedDB do navegador (`services/bonecoStore.ts`), que aguenta imagens e vídeos grandes. Sem IndexedDB, ficam só na memória da aba. Isso tem duas consequências que importam para o modo real:
+
+- Os bonecos não acompanham a conta: outro navegador ou computador não vê os bonecos.
+- O overlay no OBS roda em outro processo e não enxerga esse armazenamento.
+
+Para o modo real, os arquivos vão para o Supabase Storage (bucket por criador) e os dados do boneco para uma tabela com as mesmas regras de segurança por linha das outras.
 
 | Parte | Arquivo |
 |---|---|
-| Anfitriões, quadros, roteiros e funções puras (duração da fala, nome falável, resposta de roteiro) | `src/domain/stage.ts` |
-| Desenho dos anfitriões em SVG, com a boca animada | `src/features/stage/HostArt.tsx` |
-| Cena do palco e o tocador de roteiro | `src/features/stage/StageScene.tsx`, `src/features/stage/stage.css` |
-| Página | `src/pages/StagePage.tsx` |
+| Regras do boneco (validação, falas, leitura segura do armazenamento) | `src/domain/bonecos.ts` |
+| Quadros, vagas, elenco, roteiros e tempos | `src/domain/stage.ts` |
+| Armazenamento dos bonecos e dos arquivos | `src/services/bonecoStore.ts` |
+| Boneco em cena (parado e falando) | `src/features/stage/BonecoView.tsx` |
+| Cena do palco e tocador de roteiro | `src/features/stage/StageScene.tsx` |
+| Páginas | `src/pages/StagePage.tsx`, `src/pages/BonecosPage.tsx`, `src/pages/BonecoEditPage.tsx` |
 
-O que a amostra faz:
-
-- Toca em laço o roteiro de cada um dos seis quadros: pedido do espectador, fala com legenda revelada aos poucos, avisos e enquete.
-- Mostra dois anfitriões em cena no Tribunal e no Duelo, com destaque para quem fala.
-- Aceita um pedido digitado ("Testar um pedido") e responde com uma frase pronta do anfitrião.
-- Fala em voz alta com a voz do próprio navegador, se o criador ligar a opção. Não é a voz final.
-- Empilha a cena em telas estreitas, o que serve de primeiro esboço da variante vertical.
-
-### Elenco da amostra
-
-O elenco da amostra **não é o da seção 4**. A pedido do dono do projeto, ele usa paródias que misturam desenhos conhecidos com animes:
-
-| Anfitrião | Mistura | Quadros na amostra |
-|---|---|---|
-| Lula Molusco da Akatsuki | Lula Molusco × Akatsuki | Papo Reto, Tribunal (acusação) |
-| Irmão do Jorel com Sharingan | Irmão do Jorel × Sharingan | Oráculo |
-| Patrick Super Saiyajin | Patrick Estrela × Super Saiyajin | Tribunal (defesa) |
-| Cebolinha do Caderno | Cebolinha × Death Note | História Coletiva, Duelo |
-| Pica-Pau do Chapéu de Palha | Pica-Pau × Chapéu de Palha | Correio Falado, Duelo |
-
-Os desenhos são originais, feitos por código com formas simples. Os personagens parodiados têm dono, e nenhum deles foi licenciado. Isso serve para uma amostra. Para um produto pago, vale o que a seção 4.1 diz: ou licença, ou o elenco de domínio público. Trocar o elenco é trocar a lista `HOSTS` e os desenhos de `HostArt.tsx`; os quadros não dependem de quem está em cena.
-
+O elenco de domínio público da seção 4.2 continua como sugestão. Na prática, o criador decide quem entra em cena. A responsabilidade pelos direitos dos personagens que ele cadastra é dele, e isso precisa constar nos termos de uso antes do lançamento.
