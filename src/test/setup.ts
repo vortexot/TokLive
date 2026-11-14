@@ -6,6 +6,8 @@ import { afterEach, vi } from 'vitest';
 vi.mock('../features/scene/webgl', () => ({ hasWebGL: () => false }));
 
 afterEach(() => {
+  // Testes de ambiente "node" (banco, worker) não têm window.
+  if (typeof window === 'undefined') return;
   cleanup();
   window.localStorage.clear();
 });
