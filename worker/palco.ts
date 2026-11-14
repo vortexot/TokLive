@@ -50,7 +50,7 @@ const handle = (process.argv[2] ?? env('PALCO_TIKTOK') ?? '').replace(/^@/, '').
 function createClaude(apiKey: string): IaClient {
   // baseURL fixo: uma variável ANTHROPIC_BASE_URL perdida no computador não pode desviar as chamadas.
   const client = new Anthropic({ apiKey, baseURL: 'https://api.anthropic.com', maxRetries: 1, timeout: 25_000 });
-  // Se a API recusar a chamada com modelo reserva (erro 400), a ponte passa a usar a chamada simples.
+  // Se a API recusar o recurso de modelo reserva (erro 400), a ponte passa a usar a chamada simples.
   let simple = false;
 
   const textOf = (content: { type: string }[]) =>
@@ -61,9 +61,9 @@ function createClaude(apiKey: string): IaClient {
 
   return {
     model: MODEL,
-    async generate(request, schema) {
-      // Falas curtas e rápidas: esforço baixo e resposta no formato { falas: [...] }.
-      const output_config = { effort: 'low' as const, format: { type: 'json_schema' as const, schema } };
+    async generate(request) {
+      // Texto puro, como no Abismo: uma fala por linha. Esforço baixo, falas curtas.
+      const output_config = { effort: 'low' as const };
       const messages = [{ role: 'user' as const, content: request.user }];
       try {
         if (!simple) {
@@ -71,7 +71,7 @@ function createClaude(apiKey: string): IaClient {
             // Se o modelo recusar o pedido, o servidor tenta o modelo reserva recomendado.
             const response = await client.beta.messages.create({
               model: MODEL,
-              max_tokens: 4000,
+              max_tokens: 600,
               output_config,
               betas: ['server-side-fallback-2026-07-01'],
               fallbacks: 'default',
@@ -82,10 +82,10 @@ function createClaude(apiKey: string): IaClient {
           } catch (error) {
             if (!(error instanceof Anthropic.BadRequestError)) throw error;
             simple = true;
-            console.log(`[palco] A API recusou a chamada com modelo reserva (${error.message}). Usando a chamada simples daqui em diante.`);
+            console.log(`[palco] A API recusou o modelo reserva (${error.message}). Usando a chamada simples daqui em diante.`);
           }
         }
-        const response = await client.messages.create({ model: MODEL, max_tokens: 4000, output_config, system: request.system, messages });
+        const response = await client.messages.create({ model: MODEL, max_tokens: 600, output_config, system: request.system, messages });
         return { text: textOf(response.content), stopReason: response.stop_reason };
       } catch (error) {
         if (error instanceof Anthropic.AuthenticationError || error instanceof Anthropic.PermissionDeniedError) throw new IaError('chave', '');

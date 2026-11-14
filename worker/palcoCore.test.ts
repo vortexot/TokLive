@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { IaError, createEventBuffer, falasSchema, isAllowedOrigin, parseEnvFile, parseIaRequest, runIa, sseChunk, staticFile, type IaClient } from './palcoCore';
+import { IaError, createEventBuffer, isAllowedOrigin, parseEnvFile, parseIaRequest, runIa, sseChunk, staticFile, type IaClient } from './palcoCore';
 
 const request = { system: 'sistema', user: 'pedido', speakers: [0, 1], maxChars: 200 };
 
 function fake(reply: { text: string; stopReason: string | null } | Error): IaClient {
-  return { model: 'modelo-teste', generate: async () => { if (reply instanceof Error) throw reply; return reply; } };
+  return {
+    model: 'modelo-teste',
+    generate: async () => {
+      if (reply instanceof Error) throw reply;
+      return reply;
+    },
+  };
 }
 
 describe('ponte do palco: pedido para a IA', () => {
@@ -18,22 +24,29 @@ describe('ponte do palco: pedido para a IA', () => {
     expect(parseIaRequest(null)).toBeNull();
   });
 
-  it('o formato pedido à IA só aceita as vagas que falam', () => {
-    const schema = falasSchema([0]) as any;
-    expect(schema.properties.falas.items.properties.vaga.enum).toEqual([0]);
-    expect(schema.additionalProperties).toBe(false);
-  });
-
-  it('devolve as falas, o modelo e o tempo', async () => {
+  it('lê as falas do texto puro, uma por linha, ignorando o que não está no formato', async () => {
     let t = 1000;
-    const result = await runIa(request, fake({ text: '{"falas":[{"vaga":0,"texto":"Acuso!"},{"vaga":1,"texto":"Defendo!"},{"vaga":7,"texto":"intrusa"}]}', stopReason: 'end_turn' }), () => (t += 250));
-    expect(result).toEqual({ ok: true, falas: [{ vaga: 0, texto: 'Acuso!' }, { vaga: 1, texto: 'Defendo!' }], ms: 250, modelo: 'modelo-teste' });
+    const result = await runIa(
+      request,
+      fake({ text: 'Claro, aqui vai:\n0: Acuso!\n1 - Defendo!\nvaga 7: intrusa\n[0]: Acuso de novo', stopReason: 'end_turn' }),
+      () => (t += 250),
+    );
+    expect(result).toEqual({
+      ok: true,
+      falas: [
+        { vaga: 0, texto: 'Acuso!' },
+        { vaga: 1, texto: 'Defendo!' },
+        { vaga: 0, texto: 'Acuso de novo' },
+      ],
+      ms: 250,
+      modelo: 'modelo-teste',
+    });
   });
 
   it('explica cada falha sem expor detalhes internos', async () => {
     expect(await runIa(request, null)).toMatchObject({ ok: false, erro: 'sem-chave' });
     expect(await runIa(request, fake({ text: '', stopReason: 'refusal' }))).toMatchObject({ ok: false, erro: 'recusa' });
-    expect(await runIa(request, fake({ text: 'não é json', stopReason: 'end_turn' }))).toMatchObject({ ok: false, erro: 'formato' });
+    expect(await runIa(request, fake({ text: 'resposta sem formato nenhum', stopReason: 'end_turn' }))).toMatchObject({ ok: false, erro: 'formato' });
     expect(await runIa(request, fake({ text: '{"falas":[]}', stopReason: 'end_turn' }))).toMatchObject({ ok: false, erro: 'formato' });
     expect(await runIa(request, fake(new IaError('limite', '')))).toMatchObject({ ok: false, erro: 'limite' });
     expect(await runIa(request, fake(new Error('boom')))).toMatchObject({ ok: false, erro: 'api' });

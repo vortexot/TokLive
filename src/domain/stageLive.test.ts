@@ -13,6 +13,7 @@ import {
   isNoise,
   joinNames,
   looksLikeInjection,
+  parsePlainLines,
   personFrom,
   pickNext,
   pruneQueue,
@@ -203,6 +204,17 @@ describe('palco ao vivo: falas', () => {
     expect(acceptLines({ falas: [{ vaga: 0, texto: 'só um' }] }, [0, 1], 200, terms)).toBeNull();
     expect(acceptLines({ falas: [{ vaga: 0, texto: 'que porra' }] }, [0], 200, terms)).toBeNull();
     expect(acceptLines('texto solto', [0], 200, terms)).toBeNull();
+  });
+
+  it('lê a resposta em texto puro, no formato do Abismo', () => {
+    expect(parsePlainLines('0: Oi, Lu!', [0])).toEqual([{ vaga: 0, texto: 'Oi, Lu!' }]);
+    expect(parsePlainLines('Vaga 1 - "Defendo!"\n[0]: Acuso', [0, 1])).toEqual([
+      { vaga: 1, texto: 'Defendo!' },
+      { vaga: 0, texto: 'Acuso' },
+    ]);
+    // Vaga que não está em cena, linha sem formato e linha vazia não entram.
+    expect(parsePlainLines('2: fora\nbla bla\n0:   ', [0, 1])).toEqual([]);
+    expect(parsePlainLines('', [0])).toEqual([]);
   });
 
   it('a história guarda só o final quando cresce', () => {

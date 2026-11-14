@@ -1,5 +1,6 @@
 // Núcleo da ponte do Palco: regras sem rede, testáveis. O programa em palco.ts liga isto ao TikTok, à IA e ao HTTP.
 
+import { parsePlainLines } from '../src/domain/stageLive';
 import type { LiveEvent } from '../src/domain/types';
 
 /* ---------- Pedido de fala para a IA ---------- */
@@ -30,7 +31,8 @@ export class IaError extends Error {
 /** O que a ponte precisa de um cliente de IA. Em palco.ts é o SDK da Anthropic; nos testes, um falso. */
 export interface IaClient {
   model: string;
-  generate(request: IaRequest, schema: Record<string, unknown>): Promise<{ text: string; stopReason: string | null }>;
+  /** Devolve o texto puro da resposta, uma fala por linha. */
+  generate(request: IaRequest): Promise<{ text: string; stopReason: string | null }>;
 }
 
 const MESSAGES: Record<IaErrorCode, string> = {
@@ -61,60 +63,27 @@ export function parseIaRequest(body: unknown): IaRequest | null {
   return { system: b.system, user: b.user, speakers: [...b.speakers], maxChars };
 }
 
-/** Formato da resposta: uma lista de falas, cada uma com a vaga e o texto. */
-export function falasSchema(speakers: readonly number[]): Record<string, unknown> {
-  return {
-    type: 'object',
-    properties: {
-      falas: {
-        type: 'array',
-        items: {
-          type: 'object',
-          properties: {
-            vaga: { type: 'integer', enum: [...new Set(speakers)] },
-            texto: { type: 'string' },
-          },
-          required: ['vaga', 'texto'],
-          additionalProperties: false,
-        },
-      },
-    },
-    required: ['falas'],
-    additionalProperties: false,
-  };
-}
-
 export async function runIa(request: IaRequest, client: IaClient | null, now: () => number = Date.now): Promise<IaResult> {
   if (!client) return iaFailure('sem-chave');
   const started = now();
   let reply: { text: string; stopReason: string | null };
   try {
-    reply = await client.generate(request, falasSchema(request.speakers));
+    reply = await client.generate(request);
   } catch (error) {
     if (error instanceof IaError) return iaFailure(error.code, error.message || undefined);
     return iaFailure('api', error instanceof Error ? error.message : undefined);
   }
   if (reply.stopReason === 'refusal') return iaFailure('recusa');
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(reply.text);
-  } catch {
-    return iaFailure('formato');
-  }
-  const falas = (parsed as { falas?: unknown })?.falas;
-  if (!Array.isArray(falas)) return iaFailure('formato');
-  const clean = falas
-    .map((f) => ({ vaga: Number((f as { vaga?: unknown }).vaga), texto: String((f as { texto?: unknown }).texto ?? '') }))
-    .filter((f) => request.speakers.includes(f.vaga) && f.texto.trim());
-  if (!clean.length) return iaFailure('formato');
-  return { ok: true, falas: clean, ms: now() - started, modelo: client.model };
+  const falas = parsePlainLines(reply.text, request.speakers);
+  if (!falas.length) return iaFailure('formato');
+  return { ok: true, falas, ms: now() - started, modelo: client.model };
 }
 
 /* ---------- Quem pode usar a ponte ---------- */
 
 /**
- * A ponte só atende o próprio painel: páginas abertas no próprio computador ou o site publicado do TokArena.
- * Sem esta checagem, qualquer site aberto no navegador poderia gastar a chave da IA chamando localhost.
+ * A ponte só atende o próprio computador e o site publicado do TokArena: páginas abertas no próprio computador
+ * ou o site publicado. Sem esta checagem, qualquer site aberto no navegador poderia gastar a chave da IA chamando localhost.
  */
 export function isAllowedOrigin(origin: string | undefined): boolean {
   if (!origin) return true; // mesma origem (navegação direta, curl)
