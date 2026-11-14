@@ -419,3 +419,37 @@ describe('palco e bonecos', () => {
     expect(await screen.findByText('Boneco não encontrado')).toBeInTheDocument();
   });
 });
+
+describe('palco ao vivo', () => {
+  beforeEach(() => {
+    resetBonecoStoreForTests();
+    window.localStorage.clear();
+  });
+
+  it('liga o palco, cumprimenta um seguidor simulado e responde um pedido escrito', async () => {
+    setup('/palco');
+    fireEvent.click(within(await screen.findByRole('radiogroup', { name: 'Modo do palco' })).getByRole('radio', { name: 'Ao vivo' }));
+    expect(await screen.findByRole('heading', { name: 'Conexão com a LIVE' })).toBeInTheDocument();
+    expect(screen.getByText(/npm run palco -- @seu_usuario/)).toBeInTheDocument();
+
+    // Desligado, os eventos só entram na fila.
+    const sim = screen.getByRole('heading', { name: 'Simular eventos da LIVE' }).closest('section')!;
+    fireEvent.click(within(sim).getByRole('button', { name: 'Novo seguidor' }));
+    const queue = screen.getByRole('heading', { name: /Fila/ }).closest('section')!;
+    expect(await within(queue).findByText('Seguidor')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ligar palco' }));
+    const stage = screen.getByRole('group', { name: 'Palco: Papo Reto' });
+    // Sem boneco e sem ponte: a vaga fala pelo roteiro, depois da janela que junta seguidores.
+    expect(await within(stage).findByText(/^Anfitrião: (Que bom ter vocês aqui|Chegou gente nova)/, {}, { timeout: 4000 })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Pausar palco' })).toBeInTheDocument();
+
+    const talk = screen.getByRole('heading', { name: 'Fale com os bonecos' }).closest('section')!;
+    fireEvent.change(within(talk).getByLabelText('Escreva um pedido'), { target: { value: 'tudo bem por aí?' } });
+    fireEvent.click(within(talk).getByRole('button', { name: 'Enviar' }));
+    const log = screen.getByRole('heading', { name: 'Histórico' }).closest('section')!;
+    expect(await within(log).findByText('“tudo bem por aí?”', {}, { timeout: 8000 })).toBeInTheDocument();
+    expect(within(log).getAllByText('Roteiro').length).toBeGreaterThan(0);
+    expect(within(log).getAllByText('IA desligada: conecte a ponte com a chave configurada.').length).toBeGreaterThan(0);
+  }, 15000);
+});

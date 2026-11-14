@@ -44,7 +44,25 @@ describe('tradução de mensagens da LIVE', () => {
 
   it('presente simples conta uma vez, com o valor da faixa', () => {
     const data = { user: { uniqueId: 'fabi' }, giftDetails: { giftType: 2, diamondCount: 99 }, repeatCount: 1 };
-    expect(normalizeWebcast('gift', data)).toEqual([{ type: 'gift', username: 'fabi', gift: 'foguete' }]);
+    expect(normalizeWebcast('gift', data)).toEqual([{ type: 'gift', username: 'fabi', gift: 'foguete', diamonds: 99 }]);
+  });
+
+  it('lê o formato do protocolo v3 (displayId, gift.name, repeatEnd numérico) e o apelido', () => {
+    const user = { id: '7001', displayId: 'lu_gamer', nickname: 'Lu ✨' };
+    expect(normalizeWebcast('chat', { user, comment: 'oi' })).toEqual([{ type: 'comment', username: 'lu_gamer', nickname: 'Lu ✨', text: 'oi' }]);
+    expect(normalizeWebcast('follow', { user })).toEqual([{ type: 'follow', username: 'lu_gamer', nickname: 'Lu ✨' }]);
+    expect(normalizeWebcast('member', { user })).toEqual([{ type: 'enter', username: 'lu_gamer', nickname: 'Lu ✨' }]);
+    const mid = { user, gift: { type: 1, diamondCount: 1, name: 'Rose' }, repeatCount: 2, repeatEnd: 0 };
+    expect(normalizeWebcast('gift', mid)).toEqual([]);
+    expect(normalizeWebcast('gift', { ...mid, repeatEnd: 1 })).toEqual([
+      { type: 'gift', username: 'lu_gamer', nickname: 'Lu ✨', gift: 'faisca', diamonds: 1, giftName: 'Rose' },
+      { type: 'gift', username: 'lu_gamer', nickname: 'Lu ✨', gift: 'faisca', diamonds: 1, giftName: 'Rose' },
+    ]);
+  });
+
+  it('lê o nome do presente no formato da documentação (giftDetails.giftName)', () => {
+    const data = { user: { uniqueId: 'rafa', nickname: 'Rafa' }, giftDetails: { giftType: 2, diamondCount: 100, giftName: 'Lion' } };
+    expect(normalizeWebcast('gift', data)).toEqual([{ type: 'gift', username: 'rafa', nickname: 'Rafa', gift: 'meteoro', diamonds: 100, giftName: 'Lion' }]);
   });
 
   it('presente em combo só conta no fim, uma vez por repetição, com teto', () => {

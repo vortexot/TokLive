@@ -1,6 +1,6 @@
 # Palco: área de conversa falada
 
-> **Estado: proposta, com uma amostra funcional.** O painel já tem o Palco (seis quadros com falas de roteiro) e a aba Bonecos, onde o criador cadastra os próprios personagens (seção 16). Fila real, IA, voz gerada, moderação e overlay ainda não existem. Os pontos que dependem de teste estão marcados como "não verificado".
+> **Estado: em teste.** O painel tem o Palco com os modos Demonstração e Ao vivo, a aba Bonecos e uma ponte local que liga a LIVE do TikTok e a IA (seção 16 e seção 17). Nada foi usado ainda numa LIVE real. Os pontos que dependem de teste estão marcados como "não verificado".
 
 ## 1. Resumo
 
@@ -570,3 +570,38 @@ Para o modo real, os arquivos vão para o Supabase Storage (bucket por criador) 
 | Páginas | `src/pages/StagePage.tsx`, `src/pages/BonecosPage.tsx`, `src/pages/BonecoEditPage.tsx` |
 
 O elenco de domínio público da seção 4.2 continua como sugestão. Na prática, o criador decide quem entra em cena. A responsabilidade pelos direitos dos personagens que ele cadastra é dele, e isso precisa constar nos termos de uso antes do lançamento.
+
+## 17. Modo ao vivo e ponte local
+
+O desenho da seção 9 previa uma função de servidor no Supabase. Para testar numa LIVE real sem montar o Supabase, a primeira versão usa uma **ponte local** (`worker/palco.ts`), rodando no computador da transmissão:
+
+```text
+TikTok ──(tiktok-live-connector)──▶ ponte (localhost:8787) ──(eventos SSE)──▶ painel, aba Palco
+                                     │  ▲                                        │
+                                     │  └────────(POST /palco/ia: texto pronto)──┤ diretor
+                                     ▼                                           │
+                            API do Claude (chave em worker/.env)          voz do navegador
+                                                                                 │
+                                                       tela do palco (BroadcastChannel) ──▶ OBS
+```
+
+| Parte | Arquivo |
+|---|---|
+| Regras do ao vivo: pedidos, fila, filtros, texto enviado à IA, leitura da resposta | `src/domain/stageLive.ts` |
+| Diretor: quem fala, quando, aprovação, memória, histórico | `src/features/stage/director.ts` |
+| Ligação com o painel, voz e tela do palco | `src/features/stage/useLiveStage.ts`, `voice.ts`, `useSpeechInput.ts` |
+| Interface do modo ao vivo | `src/features/stage/LiveStage.tsx` |
+| Tela do palco para o OBS | `src/pages/CenaPage.tsx` (rota `#/palco-cena`) |
+| Ponte: TikTok, IA e site | `worker/palco.ts`, `worker/palcoCore.ts` |
+
+Decisões:
+
+- **A chave da IA fica na ponte.** O navegador manda o texto já montado; a ponte confere tamanhos e limites, chama a IA e devolve só as falas. A ponte só atende o próprio computador e o site publicado, para outro site aberto no navegador não gastar a chave.
+- **A ponte serve o painel em `localhost:8787`.** Assim não há bloqueio de conteúdo misto nem de acesso à rede local. Os bonecos ficam no armazenamento desse endereço.
+- **Resposta estruturada.** A IA devolve `{ falas: [{ vaga, texto }] }`. O painel confere de novo as vagas, limpa o texto e passa o filtro de termos; qualquer problema troca a resposta pelo roteiro.
+- **Modelo.** Padrão `claude-opus-5-5` com esforço baixo e modelo reserva automático em caso de recusa. Configurável por `PALCO_MODELO`.
+- **Eventos.** Os eventos da ponte entram no painel por `actions.emit`, como os do simulador. Os jogos, o feed e o Palco enxergam a mesma coisa (`actions.onLiveEvent`).
+- **Voz.** Síntese do navegador, com a voz instalada escolhida para cada boneco. A voz final, gerada por um serviço de TTS, continua em aberto (seção 14).
+
+O que ainda não existe: votação dentro do tribunal e do duelo ao vivo (a IA escreve acusação e defesa; o veredito fica com o chat e com o criador), preparar a próxima fala enquanto a atual toca, e a função de servidor do Supabase para quem não quer rodar a ponte.
+

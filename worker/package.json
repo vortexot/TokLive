@@ -4,9 +4,11 @@
   "type": "module",
   "description": "Liga LIVEs do TikTok ao TokArena. Rode em um servidor, nunca no navegador.",
   "scripts": {
-    "start": "tsx index.ts"
+    "start": "tsx index.ts",
+    "palco": "tsx palco.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
     "@supabase/supabase-js": "^2.0.0",
     "tiktok-live-connector": "^2.5.0",
     "tsx": "^4.0.0"

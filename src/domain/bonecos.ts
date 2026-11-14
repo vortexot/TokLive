@@ -20,6 +20,8 @@ export interface BonecoVoice {
   pitch: number;
   /** Velocidade: 0.5 (lenta) a 1.5 (rápida). */
   rate: number;
+  /** Voz instalada no computador (identificador do navegador). Vazio: a voz padrão em português. */
+  voiceURI?: string;
 }
 
 export interface Boneco {
@@ -105,6 +107,12 @@ export function validateDraft(draft: BonecoDraft, takenNames: readonly string[])
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, Number.isFinite(value) ? value : min));
 
+function cleanVoice(raw: { pitch?: unknown; rate?: unknown; voiceURI?: unknown } | undefined): BonecoVoice {
+  const voice: BonecoVoice = { pitch: clamp(Number(raw?.pitch ?? 1), 0.5, 2), rate: clamp(Number(raw?.rate ?? 1), 0.5, 1.5) };
+  if (typeof raw?.voiceURI === 'string' && raw.voiceURI.trim()) voice.voiceURI = raw.voiceURI.trim().slice(0, 200);
+  return voice;
+}
+
 export function normalizeColor(value: string): string {
   return /^#[0-9a-f]{6}$/i.test(value) ? value.toLowerCase() : DEFAULT_COLOR;
 }
@@ -116,7 +124,7 @@ export function bonecoFromDraft(draft: BonecoDraft, base: { id: string; now: num
     name: draft.name.trim().slice(0, NAME_MAX),
     persona: draft.persona.trim().slice(0, PERSONA_MAX),
     phrases: parsePhrases(draft.phrasesText),
-    voice: { pitch: clamp(draft.voice.pitch, 0.5, 2), rate: clamp(draft.voice.rate, 0.5, 1.5) },
+    voice: cleanVoice(draft.voice),
     color: normalizeColor(draft.color),
     media: base.media,
     createdAt: base.existing?.createdAt ?? base.now,
@@ -150,7 +158,7 @@ export function sanitizeBoneco(raw: unknown): Boneco | null {
     name: r.name.trim().slice(0, NAME_MAX),
     persona: typeof r.persona === 'string' ? r.persona.slice(0, PERSONA_MAX) : '',
     phrases: Array.isArray(r.phrases) ? parsePhrases(r.phrases.filter((p: unknown) => typeof p === 'string').join('\n')) : [],
-    voice: { pitch: clamp(Number(r.voice?.pitch ?? 1), 0.5, 2), rate: clamp(Number(r.voice?.rate ?? 1), 0.5, 1.5) },
+    voice: cleanVoice(r.voice),
     color: normalizeColor(String(r.color ?? '')),
     media: { parado: media('parado'), falando: media('falando') },
     createdAt: Number(r.createdAt) || 0,

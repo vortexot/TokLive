@@ -371,6 +371,10 @@ export function applyLiveEvent(input: AppState, event: LiveEvent, ctx: Ctx): App
       return toastForEvent(s, { tone: 'info', title: `@${username} compartilhou a LIVE`, detail: 'Bônus de 10 XP.' }, ctx);
     }
 
+    case 'enter':
+      // Entrar na sala não cria personagem nem conta como interação: só o Palco usa este evento.
+      return input;
+
     case 'join': {
       const actor = event.participantId
         ? input.participants.find((p) => p.id === event.participantId)

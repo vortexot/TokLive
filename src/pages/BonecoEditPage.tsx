@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSPropert
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Film, Image as ImageIcon, MessageCircle, Save, Trash2, Upload, UserRound, Volume2, X } from 'lucide-react';
 import { Button } from '../components/ui/Button';
-import { Slider, TextAreaField, TextField } from '../components/ui/Controls';
+import { SelectField, Slider, TextAreaField, TextField } from '../components/ui/Controls';
 import { Dialog } from '../components/ui/Dialog';
 import { EmptyState, Skeleton } from '../components/ui/States';
 import {
@@ -24,7 +24,7 @@ import {
 } from '../domain/bonecos';
 import { fillName } from '../domain/stage';
 import { BonecoView, type MediaSource } from '../features/stage/BonecoView';
-import { CAN_SPEAK, speakAloud } from '../features/stage/StageScene';
+import { CAN_SPEAK, speakAloud, useVoices } from '../features/stage/voice';
 import { deleteBoneco, newId, saveBoneco, useBonecos, type MediaChanges } from '../services/bonecoStore';
 import { useActions } from '../state/AppProvider';
 import '../features/stage/stage.css';
@@ -151,6 +151,7 @@ function Editor({ existing }: { existing: Boneco | null }) {
   const [hearing, setHearing] = useState(false);
   const stopVoice = useRef<(() => void) | null>(null);
   const preview = usePendingPreview(files);
+  const voices = useVoices();
 
   useEffect(() => () => stopVoice.current?.(), []);
 
@@ -323,6 +324,24 @@ function Editor({ existing }: { existing: Boneco | null }) {
               hint={`Uma por linha. {nome} vira o nome de quem pediu. Usadas na demonstração e quando a IA não responder. ${phrases.length}/${PHRASES_MAX} falas.`}
               onChange={(e) => set('phrasesText', e.target.value)}
             />
+            <SelectField
+              label="Voz"
+              value={draft.voice.voiceURI ?? ''}
+              hint={
+                CAN_SPEAK
+                  ? 'Vozes instaladas neste computador. Use vozes diferentes para cada boneco. Na LIVE, use o mesmo computador e navegador.'
+                  : 'Este navegador não oferece voz sintetizada.'
+              }
+              disabled={!CAN_SPEAK}
+              onChange={(e) => set('voice', { ...draft.voice, voiceURI: e.target.value || undefined })}
+            >
+              <option value="">Padrão do navegador (português)</option>
+              {voices.map((v) => (
+                <option key={v.voiceURI} value={v.voiceURI}>
+                  {v.name} · {v.lang}
+                </option>
+              ))}
+            </SelectField>
             <Slider
               label="Tom da voz"
               value={draft.voice.pitch}

@@ -113,12 +113,21 @@ export interface ConnectionState {
 
 export type GiftId = 'faisca' | 'escudo' | 'foguete' | 'meteoro';
 
+/** Nome de exibição do TikTok (apelido), quando a LIVE informa. Serve para o Palco chamar a pessoa pelo nome. */
+interface Who {
+  username?: string;
+  nickname?: string;
+}
+
 export type LiveEvent =
-  | { type: 'follow'; username?: string }
-  | { type: 'comment'; username?: string; text: string }
-  | { type: 'like'; username?: string; count: number }
-  | { type: 'gift'; username?: string; gift: GiftId }
-  | { type: 'share'; username?: string }
+  | ({ type: 'follow' } & Who)
+  | ({ type: 'comment'; text: string } & Who)
+  | ({ type: 'like'; count: number } & Who)
+  /** `giftName` e `diamonds` vêm do presente real da LIVE; `gift` é a faixa do jogo. */
+  | ({ type: 'gift'; gift: GiftId; giftName?: string; diamonds?: number } & Who)
+  | ({ type: 'share' } & Who)
+  /** Alguém entrou na sala da LIVE. Os jogos ignoram; o Palco pode cumprimentar. */
+  | ({ type: 'enter' } & Who)
   | { type: 'join'; participantId?: string }
   | { type: 'live-end' };
 

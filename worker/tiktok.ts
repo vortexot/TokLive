@@ -4,9 +4,14 @@
 import { ControlEvent, TikTokLiveConnection, WebcastEvent } from 'tiktok-live-connector';
 import type { ConnectFn } from './core';
 
-export function createTikTokConnect(options: { signApiKey?: string } = {}): ConnectFn {
+/**
+ * `members` também repassa quem entra na sala. O worker do Supabase deixa desligado (cada entrada viraria uma linha
+ * no banco); a ponte do Palco liga, para poder cumprimentar quem chega.
+ */
+export function createTikTokConnect(options: { signApiKey?: string; members?: boolean } = {}): ConnectFn {
   return async (handle, callbacks) => {
     const conn = new TikTokLiveConnection(handle, options.signApiKey ? { signApiKey: options.signApiKey } : {});
+    if (options.members) conn.on(WebcastEvent.MEMBER, (d: unknown) => callbacks.onMessage('member', d));
 
     conn.on(WebcastEvent.CHAT, (d: unknown) => callbacks.onMessage('chat', d));
     conn.on(WebcastEvent.GIFT, (d: unknown) => callbacks.onMessage('gift', d));

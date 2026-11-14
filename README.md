@@ -10,7 +10,7 @@ Plataforma de minigames 3D interativos para LIVEs do TikTok. Os espectadores par
 |---|---|
 | Visão geral, Game Hub, Minha arena, Participantes, Personagens, Ranking, Estatísticas, Configurações, Conta, Ajuda | Implementadas, navegáveis e funcionais localmente |
 | Seis jogos | Corrida de obstáculos, chão de lava, batalha de empurrões, batatinha frita, futebol e plataformas desaparecendo: todos jogáveis em 3D, com poderes de presentes, turbo coletivo e classificação |
-| Palco | Área de conversa falada, sem jogo: seis quadros (perguntas, recados, oráculo, história, tribunal e duelo). Na aba **Bonecos**, o criador cadastra os próprios personagens (imagem ou vídeo parado e falando, personalidade, falas prontas e voz) e escolhe quem ocupa cada vaga. **Falas de roteiro, sem IA e sem LIVE.** Os bonecos ficam no navegador. Desenho completo em `docs/area-de-conversa.md` |
+| Palco | Área de conversa falada, sem jogo: seis quadros (perguntas, recados, oráculo, história, tribunal e duelo) com os bonecos que o criador cadastra na aba **Bonecos**. Modo **Demonstração** (falas de roteiro) e modo **Ao vivo**: respostas da IA a comentários, presentes, seguidores, compartilhamentos e meta de curtidas, fala pelo microfone, fila, aprovação antes de falar, histórico e uma tela própria para capturar no OBS. Na LIVE, funciona pela ponte local (veja "Palco na sua LIVE") |
 | Interação | Presente: XP e pontos pelo valor, poder no jogo e vaga na frente da fila. Curtida: a cada 20, impulso para o personagem de quem curtiu (e vaga na fila aos 50). Quem interage sem ter seguido ganha personagem |
 | Conexão com a LIVE | **Simulada** na demonstração. No modo real, feita por um worker (veja abaixo) |
 | Simulador de eventos | Seguidor, comentário (`!entrar`, `!voto 1/2`), curtidas, presente, compartilhamento, entrada na fila, encerrar LIVE, modo automático |
@@ -46,6 +46,25 @@ SUPABASE_URL=https://xxxx.supabase.co SUPABASE_SERVICE_ROLE_KEY=... EULER_SIGN_A
 Fluxo: o criador digita o @ no painel → o painel grava o pedido em `live_connections` → o worker conecta à LIVE com a biblioteca [tiktok-live-connector](https://github.com/zerodytrash/TikTok-Live-Connector) (não oficial) → grava os eventos em `live_events` → o painel recebe em tempo real e aplica no jogo. O painel publica o estado da partida em um canal com o token do overlay, e o OBS (sem login) o recebe.
 
 Presentes reais viram presentes do jogo pelo valor em diamantes: 0–9 Faísca, 10–29 Escudo, 30–99 Foguete, 100 ou mais Meteoro (`GIFT_TIERS` em `src/services/liveEvents.ts`).
+
+### Palco na sua LIVE (ponte local)
+
+O Palco põe bonecos para conversar com a LIVE: eles respondem comentários, agradecem presentes e cumprimentam quem segue, com voz e legenda. Na LIVE, quem liga tudo é a **ponte**, um programa que roda no mesmo computador da transmissão. Ela conecta na sua LIVE, chama a IA com a sua chave (que nunca vai para o navegador) e abre o próprio painel.
+
+1. Copie `worker/.env.example` para `worker/.env` e preencha `ANTHROPIC_API_KEY` (chave da API da Anthropic). Sem a chave, os bonecos falam só as falas prontas.
+2. Na raiz do repositório, rode:
+
+```bash
+npm run palco -- @seu_usuario
+```
+
+3. Abra no Chrome **http://localhost:8787/TokLive/#/palco**. Use sempre este endereço: os bonecos ficam guardados no navegador, separados por endereço.
+4. Na aba **Bonecos**, cadastre os seus (imagem ou vídeo parado e falando, personalidade, falas prontas e voz).
+5. Na aba **Palco**, escolha o quadro e quem está em cena, mude para **Ao vivo** (a ponte conecta sozinha) e clique em **Ligar palco**. Nas primeiras LIVEs, ligue **Aprovar antes de falar**.
+6. Clique em **Abrir tela do palco** e capture essa janela no OBS ou no TikTok LIVE Studio (captura de janela). O som sai pelo Chrome: capture o áudio do aplicativo Chrome ou o áudio da área de trabalho. Com `#/palco-cena?fundo=verde`, o fundo fica verde para recorte.
+7. Na LIVE, os espectadores participam comentando o comando do quadro (`!pergunta`, `!recado`, `!sorte`, `!e`, `!confesso`, `!tema`). Presentes, seguidores, compartilhamentos e a meta de curtidas também geram falas. No painel, você ainda pode falar com os bonecos pelo microfone ou por texto.
+
+Deixe a aba do Palco aberta durante a LIVE: é ela que decide as falas e toca a voz. O modelo padrão é `claude-opus-5-5`; para respostas mais rápidas e baratas, use `PALCO_MODELO=claude-haiku-5-5` no `worker/.env`. Cada fala é uma chamada à API, cobrada na sua conta.
 
 ### Publicação (GitHub Pages)
 
@@ -96,7 +115,7 @@ Decisões que facilitam trocar o simulador pelo serviço real:
 
 ## Limitações conhecidas
 
-- A ligação com o TikTok (`worker/tiktok.ts`) foi escrita a partir dos tipos da biblioteca e compila, mas **nunca rodou contra uma LIVE real**. Os formatos das mensagens são lidos de forma tolerante e cobertos por testes com dados de exemplo, não com dados reais. A biblioteca é não oficial e depende do serviço Euler Stream: pode mudar ou parar.
+- A ligação com o TikTok (`worker/tiktok.ts`) foi escrita a partir dos tipos da biblioteca e compila, mas **nunca rodou contra uma LIVE real**. A documentação da biblioteca mostra `user.uniqueId` e `giftDetails`, mas os tipos da versão 2.5 trazem `user.displayId`, `gift.name` e o fim de combo como número: o tradutor aceita os dois formatos. Os formatos das mensagens são lidos de forma tolerante e cobertos por testes com dados de exemplo, não com dados reais. A biblioteca é não oficial e depende do serviço Euler Stream: pode mudar ou parar.
 - O worker aceita qualquer @ pedido por um criador logado. **Não existe verificação de que o @ pertence a quem pediu.**
 - Contas e dados online foram verificados com um Postgres local (PGlite) e um cliente de teste, **não com um projeto Supabase real**. A confirmação de e-mail, o limite de mensagens do canal em tempo real e o plano gratuito não foram exercitados.
 - Os dados de um criador ficam em um único documento por conta (teto de 4 MB, cerca de 8.000 participantes salvos). Acima disso ficam os vistos mais recentemente.
@@ -108,10 +127,12 @@ Decisões que facilitam trocar o simulador pelo serviço real:
 
 ## O que foi verificado
 
-- 213 testes: Palco e cadastro de bonecos, regras dos seis jogos (determinismo, término, classificação, casos específicos), motor de eventos, benefícios de presentes e curtidas em todos os jogos, tradução de mensagens da LIVE, camada Supabase com cliente falso, worker com conexão falsa, login e interface.
+- 258 testes: Palco (fila, filtros, diretor, texto enviado à IA, ponte), cadastro de bonecos, regras dos seis jogos (determinismo, término, classificação, casos específicos), motor de eventos, benefícios de presentes e curtidas em todos os jogos, tradução de mensagens da LIVE, camada Supabase com cliente falso, worker com conexão falsa, login e interface.
 - Segurança do banco: a migração roda em um Postgres real (PGlite) e os testes conferem que um criador só lê o que é dele, que o anônimo não lê tabelas, que o token do overlay é gerado no servidor e que só o worker grava eventos.
 - Escala: com 5.000 participantes, um evento custa cerca de 0,1 ms; 3.000 eventos misturados e mil pessoas comentando `!entrar` são processados dentro dos limites dos testes; o estado enviado ao overlay tem tamanho fixo (cerca de 47 KB) mesmo com 10.000 participantes. No navegador, o painel abre todas as páginas com 5.000 participantes sem erro, e a taxa de quadros da partida foi a mesma de 120 participantes (cerca de 23 quadros por segundo, **medidos com renderização por software, sem GPU**: em um computador comum deve ser bem maior, mas isso não foi medido).
 - Eventos remotos são aplicados em lote (até 10 vezes por segundo) e curtidas do mesmo espectador são somadas no worker, para que mil pessoas interagindo não travem o painel.
+
+- **Palco ao vivo:** a geração de falas pela IA foi testada com uma IA falsa e contra a API real apenas no caminho de erro (chave recusada). **Nenhuma fala real da IA foi gerada nos testes**, e a ponte nunca rodou contra uma LIVE real. A voz usa a síntese do navegador e não foi ouvida nos testes. O reconhecimento de voz do microfone só existe no Chrome e no Edge, e o Chrome envia o áudio ao serviço de voz do Google.
 
 ## Licenças
 

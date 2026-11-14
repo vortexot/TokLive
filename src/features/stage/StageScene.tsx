@@ -1,37 +1,50 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { Gift, Megaphone } from 'lucide-react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { Gift, Heart, LogIn, Megaphone, Share2, Sparkles, UserPlus, type LucideIcon } from 'lucide-react';
 import { Avatar } from '../../components/avatar/AvatarSvg';
 import { DEFAULT_COLOR, DEFAULT_VOICE, type Boneco, type BonecoVoice } from '../../domain/bonecos';
 import { getGift } from '../../domain/gifts';
 import { beatMs, speechMs, type Beat } from '../../domain/stage';
+import type { GiftId } from '../../domain/types';
 import { BonecoView } from './BonecoView';
+import { CAN_SPEAK, speakAloud } from './voice';
 import './stage.css';
+
+export { CAN_SPEAK, speakAloud } from './voice';
 
 const TICK_MS = 40;
 
-function prefersReducedMotion(): boolean {
+export function prefersReducedMotion(): boolean {
   return typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-export const CAN_SPEAK = typeof window !== 'undefined' && 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined';
+/* ---------- O que a cena mostra ---------- */
 
-/** Fala o texto com a voz do navegador. Devolve uma função que cancela. */
-export function speakAloud(text: string, voice: BonecoVoice, onEnd: () => void = () => undefined): () => void {
-  const synth = window.speechSynthesis;
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = 'pt-BR';
-  utterance.pitch = voice.pitch;
-  utterance.rate = voice.rate;
-  utterance.onend = onEnd;
-  utterance.onerror = onEnd;
-  synth.cancel();
-  synth.speak(utterance);
-  return () => {
-    utterance.onend = null;
-    utterance.onerror = null;
-    synth.cancel();
-  };
+export type EventIcon = 'presente' | 'seguidor' | 'compartilhamento' | 'entrada' | 'meta';
+
+export type StageContext =
+  | { kind: 'pedido'; username: string; text: string; gift?: GiftId }
+  | { kind: 'aviso'; text: string }
+  | { kind: 'evento'; icon: EventIcon; title: string; detail?: string }
+  | { kind: 'enquete'; question: string; options: [string, string]; votes: [number, number] };
+
+export interface StageView {
+  context: StageContext | null;
+  speech: { slot: number; text: string } | null;
+  /** Quantos caracteres da fala já apareceram na legenda. */
+  shown: number;
+  talking: boolean;
+  /** Próximos da fila (@). `null` esconde a linha. */
+  queue: string[] | null;
+  waitText: string;
 }
+
+/** Uma vaga do quadro em cena: o papel dela e o boneco que a ocupa (ou nenhum). */
+export interface StageSlotView {
+  label: string;
+  boneco: Boneco | null;
+}
+
+/* ---------- Roteiro de demonstração ---------- */
 
 /**
  * Toca um roteiro em laço: avança de momento em momento e revela a legenda aos poucos.
@@ -96,37 +109,77 @@ export function useStagePlayer(beats: Beat[], playing: boolean, voices: readonly
   };
 }
 
-/** O pedido ou o aviso que está valendo neste momento: o mais recente antes da fala atual. */
-function contextFor(beats: Beat[], index: number): Extract<Beat, { kind: 'pedido' | 'aviso' }> | null {
-  for (let i = index; i >= 0; i--) {
-    const b = beats[i]!;
-    if (b.kind === 'pedido' || b.kind === 'aviso') return b;
+/** Visão da cena num momento do roteiro. */
+export function viewFromScript(beats: Beat[], index: number, shown: number, playing: boolean): StageView {
+  const i = Math.min(index, Math.max(0, beats.length - 1));
+  const beat = beats[i] ?? null;
+  const speech = beat?.kind === 'fala' ? beat : null;
+  // O pedido ou o aviso que está valendo: o mais recente antes do momento atual.
+  let context: StageContext | null = null;
+  if (beat?.kind === 'enquete') context = beat;
+  else {
+    for (let k = i; k >= 0; k--) {
+      const b = beats[k]!;
+      if (b.kind === 'pedido' || b.kind === 'aviso') {
+        context = b;
+        break;
+      }
+    }
   }
-  return null;
-}
-
-/** Próximos espectadores da fila: os pedidos que ainda vão aparecer no roteiro. */
-function upcoming(beats: Beat[], index: number, current: string | null): string[] {
+  const current = context?.kind === 'pedido' ? context.username : null;
   const names: string[] = [];
   for (let step = 1; step < beats.length && names.length < 3; step++) {
-    const b = beats[(index + step) % beats.length]!;
+    const b = beats[(i + step) % beats.length]!;
     if (b.kind === 'pedido' && b.username !== current && !names.includes(b.username)) names.push(b.username);
   }
-  return names;
+  return {
+    context,
+    speech: speech ? { slot: speech.slot, text: speech.text } : null,
+    shown,
+    talking: Boolean(speech && playing && shown < speech.text.length),
+    queue: beats.some((b) => b.kind === 'pedido') ? names : null,
+    waitText: beat?.kind === 'enquete' ? 'O chat está votando' : beat?.kind === 'pedido' ? 'Pedido na fila' : 'Aguardando a próxima fala',
+  };
 }
 
-function RequestCard({ beat }: { beat: Extract<Beat, { kind: 'pedido' }> }) {
-  const space = beat.text.indexOf(' ');
-  const command = beat.text.startsWith('!') ? (space === -1 ? beat.text : beat.text.slice(0, space)) : '';
-  const rest = command ? beat.text.slice(command.length) : beat.text;
+/** Revela a legenda de uma fala ao vivo conforme o tempo passa, desde `startedAt`. */
+export function useReveal(speech: { text: string; startedAt: number; durationMs: number } | null): number {
+  const [shown, setShown] = useState(0);
+  useEffect(() => {
+    if (!speech) {
+      setShown(0);
+      return;
+    }
+    const total = speech.text.length;
+    if (prefersReducedMotion()) {
+      setShown(total);
+      return;
+    }
+    const tick = () => {
+      const p = (Date.now() - speech.startedAt) / Math.max(1, speech.durationMs);
+      setShown(Math.min(total, Math.max(0, Math.ceil(p * total))));
+    };
+    tick();
+    const timer = setInterval(tick, TICK_MS);
+    return () => clearInterval(timer);
+  }, [speech?.text, speech?.startedAt, speech?.durationMs]); // eslint-disable-line react-hooks/exhaustive-deps
+  return shown;
+}
+
+/* ---------- Peças ---------- */
+
+function RequestCard({ context }: { context: Extract<StageContext, { kind: 'pedido' }> }) {
+  const space = context.text.indexOf(' ');
+  const command = context.text.startsWith('!') ? (space === -1 ? context.text : context.text.slice(0, space)) : '';
+  const rest = command ? context.text.slice(command.length) : context.text;
   return (
-    <div className="pstage-card" key={`${beat.username}${beat.text}`}>
+    <div className="pstage-card" key={`${context.username}${context.text}`}>
       <p className="pstage-card__who">
-        <Avatar seed={beat.username} size={30} />
-        <span>@{beat.username}</span>
-        {beat.gift ? (
+        <Avatar seed={context.username} size={30} />
+        <span>@{context.username}</span>
+        {context.gift ? (
           <span className="pstage-card__gift">
-            <Gift aria-hidden /> {getGift(beat.gift).name}
+            <Gift aria-hidden /> {getGift(context.gift).name}
           </span>
         ) : null}
       </p>
@@ -138,14 +191,35 @@ function RequestCard({ beat }: { beat: Extract<Beat, { kind: 'pedido' }> }) {
   );
 }
 
-function PollCard({ beat }: { beat: Extract<Beat, { kind: 'enquete' }> }) {
-  const total = beat.votes[0] + beat.votes[1] || 1;
-  const lead = beat.votes[0] >= beat.votes[1] ? 0 : 1;
+const EVENT_ICONS: Record<EventIcon, LucideIcon> = {
+  presente: Gift,
+  seguidor: UserPlus,
+  compartilhamento: Share2,
+  entrada: LogIn,
+  meta: Heart,
+};
+
+function EventCard({ context }: { context: Extract<StageContext, { kind: 'evento' }> }) {
+  const Icon = EVENT_ICONS[context.icon] ?? Sparkles;
+  return (
+    <div className={`pstage-card pstage-event pstage-event--${context.icon}`} key={`${context.icon}${context.title}`}>
+      <Icon aria-hidden />
+      <div>
+        <p className="pstage-event__title">{context.title}</p>
+        {context.detail ? <p className="pstage-event__detail">{context.detail}</p> : null}
+      </div>
+    </div>
+  );
+}
+
+function PollCard({ context }: { context: Extract<StageContext, { kind: 'enquete' }> }) {
+  const total = context.votes[0] + context.votes[1] || 1;
+  const lead = context.votes[0] >= context.votes[1] ? 0 : 1;
   return (
     <div className="pstage-card pstage-poll">
-      <p className="pstage-poll__q">{beat.question}</p>
-      {beat.options.map((label, i) => {
-        const pct = Math.round((beat.votes[i]! / total) * 100);
+      <p className="pstage-poll__q">{context.question}</p>
+      {context.options.map((label, i) => {
+        const pct = Math.round((context.votes[i]! / total) * 100);
         return (
           <div className={`pstage-poll__row${i === lead ? ' is-lead' : ''}`} key={label}>
             <span className="pstage-poll__n">{i + 1}</span>
@@ -162,42 +236,32 @@ function PollCard({ beat }: { beat: Extract<Beat, { kind: 'enquete' }> }) {
   );
 }
 
-/** Uma vaga do quadro em cena: o papel dela e o boneco que a ocupa (ou nenhum). */
-export interface StageSlotView {
-  label: string;
-  boneco: Boneco | null;
-}
+/* ---------- Cena ---------- */
 
 export interface StageSceneProps {
   title: string;
   command?: string;
   slots: StageSlotView[];
-  beats: Beat[];
-  /** Momento atual do roteiro e quantos caracteres da fala já apareceram (vêm de `useStagePlayer`). */
-  index: number;
-  shown: number;
-  playing: boolean;
+  view: StageView;
+  /** Selo no canto: "Roteiro de demonstração", "Ao vivo"... */
+  badge?: string;
+  /** Tela cheia para captura no OBS: ocupa a janela inteira e escolhe o desenho pela orientação. */
+  fullscreen?: boolean;
 }
 
-export function StageScene({ title, command, slots, beats, index, shown, playing }: StageSceneProps) {
-  const player = { index: Math.min(index, Math.max(0, beats.length - 1)), shown };
-  const beat = beats[player.index] ?? null;
-  const speech = beat?.kind === 'fala' ? beat : null;
-  const context = useMemo(() => contextFor(beats, player.index), [beats, player.index]);
-  const request = context?.kind === 'pedido' ? context : null;
-  const queue = useMemo(() => upcoming(beats, player.index, request?.username ?? null), [beats, player.index, request]);
-  const hasRequests = useMemo(() => beats.some((b) => b.kind === 'pedido'), [beats]);
+export function StageScene({ title, command, slots, view, badge, fullscreen }: StageSceneProps) {
+  const { context, speech, shown, talking, queue } = view;
   const speakerSlot = speech ? slots[speech.slot] : null;
   const speaker = speakerSlot ? speakerSlot.boneco?.name ?? speakerSlot.label : null;
-  const talking = Boolean(speech && playing && player.shown < speech.text.length);
+  const portrait = useOrientation(Boolean(fullscreen));
 
   return (
-    <div className="pstage" role="group" aria-label={`Palco: ${title}`}>
+    <div className={`pstage${fullscreen ? ` pstage--cena${portrait ? ' pstage--vertical' : ''}` : ''}`} role="group" aria-label={`Palco: ${title}`}>
       <div className={`pstage__canvas${slots.length > 1 ? ' pstage__canvas--duo' : ''}`}>
         <header className="pstage__top">
           <span className="pstage__format">{title}</span>
           {command ? <span className="pstage__cmd">Participe: {command}</span> : null}
-          <span className="pstage__demo">Roteiro de demonstração</span>
+          {badge ? <span className="pstage__demo">{badge}</span> : null}
         </header>
 
         <div className="pstage__cast">
@@ -217,10 +281,12 @@ export function StageScene({ title, command, slots, beats, index, shown, playing
         </div>
 
         <div className="pstage__side">
-          {beat?.kind === 'enquete' ? (
-            <PollCard beat={beat} />
-          ) : request ? (
-            <RequestCard beat={request} />
+          {context?.kind === 'enquete' ? (
+            <PollCard context={context} />
+          ) : context?.kind === 'pedido' ? (
+            <RequestCard context={context} />
+          ) : context?.kind === 'evento' ? (
+            <EventCard context={context} />
           ) : context?.kind === 'aviso' ? (
             <div className="pstage-card pstage-notice">
               <Megaphone aria-hidden />
@@ -234,16 +300,16 @@ export function StageScene({ title, command, slots, beats, index, shown, playing
             <>
               <span className="pstage__speaker">{speaker}</span>
               <p>
-                {speech.text.slice(0, player.shown)}
-                <span className="pstage__ghost">{speech.text.slice(player.shown)}</span>
+                {speech.text.slice(0, shown)}
+                <span className="pstage__ghost">{speech.text.slice(shown)}</span>
               </p>
             </>
           ) : (
-            <p className="pstage__wait">{beat?.kind === 'enquete' ? 'O chat está votando' : beat?.kind === 'pedido' ? 'Pedido na fila' : 'Aguardando a próxima fala'}</p>
+            <p className="pstage__wait">{view.waitText}</p>
           )}
         </div>
 
-        {hasRequests ? (
+        {queue ? (
           <footer className="pstage__foot">
             <span className="pstage__next-label">Próximos</span>
             {queue.length ? queue.map((name) => <span key={name}>@{name}</span>) : <span className="pstage__next-none">fila vazia</span>}
@@ -257,4 +323,17 @@ export function StageScene({ title, command, slots, beats, index, shown, playing
       </p>
     </div>
   );
+}
+
+/** Na tela cheia, a cena empilha quando a janela é mais alta que larga (LIVE vertical). */
+function useOrientation(active: boolean): boolean {
+  const read = () => typeof window !== 'undefined' && window.innerHeight > window.innerWidth;
+  const [portrait, setPortrait] = useState(read);
+  useEffect(() => {
+    if (!active) return;
+    const on = () => setPortrait(read());
+    window.addEventListener('resize', on);
+    return () => window.removeEventListener('resize', on);
+  }, [active]);
+  return portrait;
 }

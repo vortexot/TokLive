@@ -130,6 +130,12 @@ export function loadBonecos(): Promise<void> {
   return loading;
 }
 
+/** Lê de novo do armazenamento (outra janela pode ter salvo um boneco). */
+export function reloadBonecos(): Promise<void> {
+  loading = null;
+  return loadBonecos();
+}
+
 export function useBonecos(): BonecosState {
   const snapshot = useSyncExternalStore(
     (listener) => {

@@ -16,5 +16,5 @@
     "types": ["node", "vite/client", "vitest/globals", "@testing-library/jest-dom"],
     "paths": { "@/*": ["./src/*"] }
   },
-  "include": ["src", "vite.config.ts", "scripts", "supabase", "worker/core.ts", "worker/core.test.ts"]
+  "include": ["src", "vite.config.ts", "scripts", "supabase", "worker/core.ts", "worker/core.test.ts", "worker/palcoCore.ts", "worker/palcoCore.test.ts"]
 }

@@ -23,6 +23,8 @@ import StatsPage from './pages/StatsPage';
 
 // O overlay carrega separado: o OBS não precisa do painel inteiro.
 const OverlayRoute = lazy(() => import('./pages/OverlayRoute'));
+// Tela do palco para capturar no OBS: sem painel, só a cena.
+const CenaPage = lazy(() => import('./pages/CenaPage'));
 
 function Splash({ text, action }: { text: string; action?: { label: string; run: () => void } }) {
   return (
@@ -68,6 +70,14 @@ export function AppRoutes() {
         element={
           <Suspense fallback={null}>
             <OverlayRoute />
+          </Suspense>
+        }
+      />
+      <Route
+        path="/palco-cena"
+        element={
+          <Suspense fallback={null}>
+            <CenaPage />
           </Suspense>
         }
       />

@@ -787,3 +787,237 @@
   }
 }
 
+
+/* ---------- Cartões de evento (presente, seguidor...) ---------- */
+.pstage-event {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+}
+.pstage-event > svg {
+  flex: none;
+  width: 2.2em;
+  height: 2.2em;
+  color: var(--text-2);
+}
+.pstage-event--presente > svg,
+.pstage-event--meta > svg {
+  color: var(--red-ink);
+}
+.pstage-event__title {
+  font-size: 1.5em;
+  font-weight: 600;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.pstage-event__detail {
+  margin-top: 0.3em;
+  color: var(--text-2);
+  font-size: 1.1em;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Tela do palco para o OBS ---------- */
+.cena {
+  min-height: 100dvh;
+}
+.pstage--cena .pstage__canvas {
+  height: 100dvh;
+  aspect-ratio: auto;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: clamp(10px, 1.45cqw, 30px);
+}
+/* Janela em pé (LIVE vertical): tudo empilhado, boneco grande em cima. */
+.pstage--vertical .pstage__canvas,
+.pstage--vertical .pstage__canvas--duo {
+  grid-template:
+    'top' auto
+    'cast' minmax(0, 1fr)
+    'side' auto
+    'caption' auto
+    'foot' auto / minmax(0, 1fr);
+  font-size: clamp(10px, 3.6cqw, 34px);
+}
+.pstage--vertical .pstage__cast {
+  aspect-ratio: auto;
+}
+.pstage--vertical .pstage__side {
+  min-height: 0;
+}
+.pstage--cena .pstage__caption {
+  min-height: 5.4em;
+}
+
+/* ---------- Página: cabeçalho com o modo ---------- */
+.palco__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3) var(--s-5);
+}
+
+/* ---------- Modo ao vivo ---------- */
+.live-main {
+  display: grid;
+  gap: var(--s-4);
+  min-width: 0;
+}
+.live-main > .palco__controls {
+  margin-top: 0;
+}
+.live-state {
+  margin-left: auto;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+.live-approve {
+  border-color: var(--warn);
+}
+.live-talk {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: end;
+  gap: var(--s-2);
+}
+.live-talk .btn {
+  height: 40px;
+}
+.live-talk--manual {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  padding-top: var(--s-4);
+  border-top: 1px dashed var(--line-strong);
+}
+.live-talk--manual:not(:has(select)) {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.live-mic[aria-pressed='true'] {
+  animation: live-pulse 1.2s ease-in-out infinite;
+}
+@keyframes live-pulse {
+  50% {
+    box-shadow: 0 0 0 4px var(--red-wash);
+  }
+}
+.live-talk__as {
+  max-width: 18rem;
+}
+.live-sim {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+.live-status {
+  display: grid;
+  gap: var(--s-2);
+  margin: 0;
+}
+.live-status div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+.live-status dt {
+  color: var(--text-2);
+}
+.live-status dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+}
+.live-conn__form {
+  display: grid;
+  gap: var(--s-3);
+  justify-items: start;
+}
+.live-conn__form .field {
+  width: 100%;
+}
+.live-conn__form code,
+.palco-info__summary code {
+  padding: 0.05rem 0.35rem;
+  background: var(--bg-2);
+  border-radius: var(--r-1);
+  color: var(--text);
+  font-size: 0.95em;
+}
+.live-opts {
+  gap: var(--s-3);
+}
+.live-count {
+  margin-left: var(--s-1);
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.live-list {
+  max-height: 26rem;
+  overflow-y: auto;
+}
+.live-list li {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s-2);
+  padding: var(--s-3) var(--s-4);
+}
+.live-list li + li {
+  border-top: 1px dashed var(--line-strong);
+}
+.live-list li > div {
+  display: grid;
+  gap: var(--s-1);
+  min-width: 0;
+}
+.live-list li.is-dropped {
+  opacity: 0.7;
+}
+.live-list__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-1) var(--s-2);
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+.live-list__head time {
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.live-kind {
+  color: var(--text);
+  font-weight: 600;
+}
+.live-list__text {
+  overflow-wrap: anywhere;
+}
+.live-list__asked {
+  color: var(--text-2);
+  font-style: italic;
+  overflow-wrap: anywhere;
+}
+.live-list__note {
+  color: var(--warn);
+  font-size: var(--fs-sm);
+}
+.live-log {
+  max-height: 34rem;
+}
+.live-empty {
+  padding: var(--s-4);
+  color: var(--text-3);
+}
+
+@container page (max-width: 700px) {
+  .live-talk {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .live-talk .live-mic {
+    grid-column: 1 / -1;
+  }
+  .live-state {
+    margin-left: 0;
+    width: 100%;
+  }
+}

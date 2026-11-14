@@ -30,6 +30,11 @@ export interface AppOptions {
 export interface Actions {
   bootstrap(): Promise<void>;
   emit(event: LiveEvent): void;
+  /**
+   * Avisa a cada evento da LIVE aplicado (simulador, worker ou ponte do Palco), depois de o motor processar.
+   * Devolve a função que cancela o aviso.
+   */
+  onLiveEvent(listener: (event: LiveEvent) => void): () => void;
   connect(handle?: string): boolean;
   disconnect(): void;
   setHandle(handle: string): void;
@@ -101,6 +106,18 @@ export function createApp(options: AppOptions = {}): App {
   const store = createStore<AppState>(engine.createInitialState());
 
   let counter = 0;
+  const eventListeners = new Set<(event: LiveEvent) => void>();
+  const notify = (events: readonly LiveEvent[]) => {
+    for (const event of events) {
+      for (const listener of eventListeners) {
+        try {
+          listener(event);
+        } catch {
+          /* um ouvinte com erro não pode parar os outros nem o motor */
+        }
+      }
+    }
+  };
   const ctx = (): Ctx => ({ now: now(), rng, id: (prefix) => `${prefix}-${now().toString(36)}-${(counter++).toString(36)}` });
   const update = (fn: (state: AppState, c: Ctx) => AppState) => store.setState((s) => fn(s, ctx()));
 
@@ -137,7 +154,15 @@ export function createApp(options: AppOptions = {}): App {
       return loading;
     },
 
-    emit: (event) => update((s, c) => engine.applyLiveEvent(s, event, c)),
+    emit(event) {
+      update((s, c) => engine.applyLiveEvent(s, event, c));
+      notify([event]);
+    },
+
+    onLiveEvent(listener) {
+      eventListeners.add(listener);
+      return () => eventListeners.delete(listener);
+    },
 
     connect(rawHandle) {
       const handle = engine.normalizeHandle(rawHandle ?? store.getState().connection.handle);
@@ -291,6 +316,7 @@ export function createApp(options: AppOptions = {}): App {
       inbox = [];
       if (!batch.length) return;
       update((state, c) => batch.reduce((acc, event) => engine.applyLiveEvent(acc, event, c), state));
+      notify(batch);
     };
     const stopLive = backend?.subscribeLive({
       onEvent: (event) => {
