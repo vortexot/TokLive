@@ -1,8 +1,8 @@
-import { Shield, TriangleAlert, Zap } from 'lucide-react';
+import { CircleX, Shield, TriangleAlert, Zap } from 'lucide-react';
 import { Avatar } from '../avatar/AvatarSvg';
 import './board.css';
 
-export type LaneCondition = 'impulso' | 'escudo' | 'atordoado' | 'chegou' | 'correndo';
+export type LaneCondition = 'impulso' | 'escudo' | 'atordoado' | 'chegou' | 'correndo' | 'fora';
 
 export interface LaneRow {
   id: string;
@@ -21,6 +21,7 @@ const CONDITION: Record<LaneCondition, { label: string; icon: typeof Zap } | nul
   atordoado: { label: 'Tropeçou', icon: TriangleAlert },
   chegou: null,
   correndo: null,
+  fora: { label: 'Eliminado', icon: CircleX },
 };
 
 /** Quadro de raias: classificação como linhas de raia, com posição em numeral de placar. O líder é marcado em vermelho. */

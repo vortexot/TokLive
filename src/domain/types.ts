@@ -166,7 +166,37 @@ export interface Racer {
   position: number | null;
   hits: number;
   lastGift: GiftId | null;
+  /** Posição lateral (jogos de arena). Na corrida, a posição lateral vem da raia. */
+  y: number;
+  /** Velocidade de empurrão (batalha) em unidades por segundo. */
+  vx: number;
+  vy: number;
+  /** Fora de jogo: caiu, foi empurrado ou foi pego se mexendo. */
+  alive: boolean;
+  outAt: number | null;
+  /** Time (futebol): 0 ou 1. */
+  team: 0 | 1 | null;
+  /** Gols (futebol). */
+  score: number;
+  /** Instante em que pode agir de novo (chute, empurrão, salto). */
+  cooldownUntil: number;
 }
+
+export type World =
+  | { kind: 'lava'; n: number; tile: number; sinkAt: number[]; warn: number }
+  | { kind: 'brawl'; r0: number; r1: number }
+  | { kind: 'freeze'; length: number; phases: number[] }
+  | {
+      kind: 'soccer';
+      w: number;
+      h: number;
+      goal: number;
+      ball: { x: number; y: number; vx: number; vy: number };
+      goals: [number, number];
+      lastTouch: string | null;
+      kickoffAt: number;
+    }
+  | { kind: 'bridge'; rows: number; cols: number; fake: number[]; known: number[]; hop: number };
 
 export type ObstacleKind = 'portao' | 'bloco' | 'pendulo';
 
@@ -200,6 +230,8 @@ export interface MatchState {
   turboUntil: number;
   racers: Racer[];
   obstacles: Obstacle[];
+  /** Estado do mundo dos jogos de arena. A corrida não usa. */
+  world: World | null;
   results: MatchResult[] | null;
   startedAt: number;
 }

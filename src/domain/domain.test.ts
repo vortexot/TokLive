@@ -74,9 +74,9 @@ describe('níveis', () => {
 });
 
 describe('catálogo de jogos', () => {
-  it('traz os seis jogos e só a corrida é jogável', () => {
+  it('traz os seis jogos e todos são jogáveis', () => {
     expect(GAMES).toHaveLength(6);
-    expect(GAMES.filter((g) => isPlayable(g.id)).map((g) => g.id)).toEqual(['corrida']);
+    expect(GAMES.every((g) => isPlayable(g.id))).toBe(true);
   });
 
   it('corrige configurações inválidas para os limites do jogo', () => {

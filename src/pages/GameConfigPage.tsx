@@ -60,7 +60,7 @@ export default function GameConfigPage() {
           <div className="cfg__stage">
             {playable ? (
               <Suspense fallback={<Skeleton height="100%" />}>
-                <RaceStage label={`Prévia 3D de ${game.name}`} />
+                <RaceStage label={`Prévia 3D de ${game.name}`} gameId={game.id} />
               </Suspense>
             ) : (
               <>

@@ -4,28 +4,12 @@
 
 import * as THREE from 'three';
 import { isLaneBlocked, racerCondition } from '../../domain/race';
-import type { CharacterSpec, MatchState } from '../../domain/types';
+import type { MatchState } from '../../domain/types';
 import { buildCharacter, makeNameSprite, type CharacterRig, type PoseMode } from './characterMesh';
+import { Bag, basic, box, crowd, lambert, mesh } from './sceneKit';
+import type { GameScene, SceneInput, SceneOptions } from './sceneTypes';
 
-export interface SceneRacer {
-  id: string;
-  username: string;
-  spec: CharacterSpec;
-}
-
-export interface SceneInput {
-  match: MatchState | null;
-  /** Todos os personagens conhecidos, por id de participante. */
-  racers: Map<string, SceneRacer>;
-  /** Quem aparece no grid quando não há partida. */
-  previewIds: string[];
-  showNames: boolean;
-}
-
-export interface SceneOptions {
-  transparent: boolean;
-  pixelRatioCap?: number;
-}
+export type { SceneInput, SceneOptions, SceneRacer } from './sceneTypes';
 
 const LANE_W = 1.9;
 const RACER_SCALE = 1.25;
@@ -90,7 +74,7 @@ function bannerSprite(text: string): THREE.Mesh {
   return new THREE.Mesh(new THREE.PlaneGeometry(9, 1.7), new THREE.MeshBasicMaterial({ map: t }));
 }
 
-export class RaceScene {
+export class RaceScene implements GameScene {
   private renderer: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
   private camera = new THREE.PerspectiveCamera(42, 16 / 9, 0.5, 600);
@@ -110,6 +94,7 @@ export class RaceScene {
   private ownGeometries: THREE.BufferGeometry[] = [];
   private ownMaterials: THREE.Material[] = [];
   private ownTextures: THREE.Texture[] = [];
+  private kit = new Bag();
 
   constructor(canvas: HTMLCanvasElement, private options: SceneOptions) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: options.transparent, powerPreference: 'high-performance' });
@@ -183,6 +168,7 @@ export class RaceScene {
     this.ownGeometries = [];
     this.ownMaterials = [];
     this.ownTextures = [];
+    this.kit.dispose();
     this.obstacles = null;
   }
 
@@ -262,6 +248,28 @@ export class RaceScene {
     banner.position.set(trackLength - 0.52, 7.4, 0);
     banner.scale.set(Math.max(1, (width + 2) / 9), 1, 1);
     this.track.add(banner);
+
+    // Arquibancadas dos dois lados, postes de luz e faixas de largada: dão escala e vida ao fundo.
+    if (!this.options.transparent) {
+      const stand = (side: number, seed: number) =>
+        this.track.add(crowd(this.kit, seed, 520, { x0: -TRACK_PAD_BEHIND + 4, x1: trackLength + TRACK_PAD_AHEAD - 6, z0: side * (width / 2 + 5), z1: side * (width / 2 + 11), y0: 0.9, y1: 5.2 }));
+      stand(-1, 3);
+      stand(1, 9);
+      const wall = lambert(this.kit, 0x1d1d24);
+      const stripe = lambert(this.kit, 0xe32636);
+      for (const s of [-1, 1]) {
+        this.track.add(mesh(box(this.kit, length, 1, 0.5), wall, centerX, 0.5, s * (width / 2 + 1.4)));
+        this.track.add(mesh(box(this.kit, length, 0.22, 0.52), stripe, centerX, 0.78, s * (width / 2 + 1.4)));
+      }
+      const lampMat = basic(this.kit, 0xfff1d0);
+      const poleMat = lambert(this.kit, 0x2b2b33);
+      for (let x = 0; x <= trackLength; x += 60) {
+        for (const s of [-1, 1]) {
+          this.track.add(mesh(box(this.kit, 0.3, 9, 0.3), poleMat, x, 4.5, s * (width / 2 + 3)));
+          this.track.add(mesh(box(this.kit, 1.6, 0.35, 0.9), lampMat, x, 9.1, s * (width / 2 + 3)));
+        }
+      }
+    }
 
     // Obstáculos: uma peça por raia, mostrada ou escondida a cada quadro.
     const obstacleList = match?.obstacles ?? [];

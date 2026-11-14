@@ -10,11 +10,11 @@ import {
   advanceMatch,
   applyGiftPower,
   applyTurbo,
-  createRace,
+  createMatch,
   endMatchEarly,
   pauseMatch as pauseRace,
   resumeMatch as resumeRace,
-} from '../domain/race';
+} from '../domain/match';
 import { RANK_VIEWS_TRACKED, rankSnapshot } from '../domain/ranking';
 import { DEFAULT_CONNECTION, DEFAULT_POLL, DEFAULT_SETTINGS, type EffectKind, type Settings } from '../domain/session';
 import type {
@@ -440,7 +440,7 @@ export function startMatch(state: AppState, ctx: Ctx): AppState {
   const gameId = state.selectedGameId;
   if (!gameId) return pushToast(state, { tone: 'warn', title: 'Escolha um jogo', detail: 'Selecione um jogo no Game Hub para iniciar.' }, ctx);
   if (!isPlayable(gameId)) {
-    return pushToast(state, { tone: 'warn', title: `${getGame(gameId).name} em desenvolvimento`, detail: 'Somente a corrida de obstáculos inicia partidas nesta demonstração.' }, ctx);
+    return pushToast(state, { tone: 'warn', title: `${getGame(gameId).name} indisponível`, detail: 'Este jogo ainda não inicia partidas.' }, ctx);
   }
   if (isMatchActive(state.match)) return state;
 
@@ -469,7 +469,7 @@ export function startMatch(state: AppState, ctx: Ctx): AppState {
   }
 
   const seed = Math.floor(ctx.rng() * 2 ** 31);
-  const match = createRace({
+  const match = createMatch({
     id: ctx.id('m'),
     gameId,
     participantIds: ids,
@@ -562,14 +562,15 @@ function finishMatch(state: AppState, ended: MatchState, ctx: Ctx): AppState {
     },
   };
 
-  s = pushActivity(s, { kind: 'partida', title: 'Partida encerrada', detail: winnerP ? `Vitória de @${winnerP.username}` : 'Encerrada antes de ter vencedor' }, ctx);
-  if (winner?.finishedAt != null && (s.bestRaceSeconds === null || winner.finishedAt < s.bestRaceSeconds)) {
+  const teamWin = ended.world?.kind === 'soccer' && winner ? ' e do time dele' : '';
+  s = pushActivity(s, { kind: 'partida', title: 'Partida encerrada', detail: winnerP ? `Vitória de @${winnerP.username}${teamWin}` : 'Encerrada sem vencedor' }, ctx);
+  if (ended.gameId === 'corrida' && winner?.finishedAt != null && (s.bestRaceSeconds === null || winner.finishedAt < s.bestRaceSeconds)) {
     s = { ...s, bestRaceSeconds: winner.finishedAt };
     s = pushActivity(s, { kind: 'recorde', title: 'Novo recorde de pista', detail: `@${winnerP?.username} · ${winner.finishedAt.toFixed(1)} s`, username: winnerP?.username }, ctx);
   }
   if (winnerP) {
     s = pushEffect(s, 'vitoria', `Vitória de @${winnerP.username}`, undefined, ctx);
-    s = toastForEvent(s, { tone: 'ok', title: `@${winnerP.username} venceu a corrida` }, ctx);
+    s = toastForEvent(s, { tone: 'ok', title: `@${winnerP.username} venceu${ended.gameId === 'corrida' ? ' a corrida' : ''}` }, ctx);
   }
   return s;
 }

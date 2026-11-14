@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { generateCharacter } from '../../domain/characters';
-import { standings } from '../../domain/race';
+import { standings } from '../../domain/match';
+import type { GameId } from '../../domain/types';
 import type { CharacterSpec, Participant } from '../../domain/types';
 import { Avatar } from '../../components/avatar/AvatarSvg';
 import { useAppState, useAppStore } from '../../state/store';
 import type { AppState } from '../../state/types';
-import { RaceScene, type SceneInput, type SceneRacer } from './raceScene';
+import { ArenaScene } from './arenaScene';
+import { RaceScene } from './raceScene';
+import type { GameScene, SceneInput, SceneRacer } from './sceneTypes';
 import { hasWebGL } from './webgl';
 import './scene.css';
 
@@ -39,10 +42,11 @@ function deriveFrom(participants: Participant[], previous: Derived | null): Deri
   return { participants, racers, top };
 }
 
-function toInput(state: AppState, derived: Derived, showNames: boolean): SceneInput {
+function toInput(state: AppState, derived: Derived, showNames: boolean, gameId: GameId | undefined): SceneInput {
   const lobby = state.lobby.filter((id) => derived.racers.has(id));
   return {
     match: state.match,
+    gameId,
     racers: derived.racers,
     previewIds: lobby.length >= 4 ? lobby : [...lobby, ...derived.top.filter((id) => !lobby.includes(id))].slice(0, 10),
     showNames,
@@ -78,15 +82,24 @@ function LanesFallback() {
   );
 }
 
+/** Jogo mostrado: o da partida em andamento, senão o pedido pela página, senão o escolhido na arena. */
+function useStageGame(forced: GameId | undefined): GameId {
+  return useAppState((s) => s.match?.gameId ?? forced ?? s.selectedGameId ?? 'corrida', Object.is);
+}
+
 export function RaceStage({
   transparent = false,
   showNames = true,
   label = 'Arena 3D da corrida',
+  gameId: forcedGame,
 }: {
   transparent?: boolean;
   showNames?: boolean;
   label?: string;
+  /** Jogo a mostrar quando não há partida (prévia na página de configuração). */
+  gameId?: GameId;
 }) {
+  const gameId = useStageGame(forcedGame);
   const store = useAppStore();
   const hostRef = useRef<HTMLDivElement>(null);
   const [failed, setFailed] = useState(false);
@@ -102,9 +115,9 @@ export function RaceStage({
     canvas.setAttribute('aria-label', label);
     host.appendChild(canvas);
 
-    let scene: RaceScene;
+    let scene: GameScene;
     try {
-      scene = new RaceScene(canvas, { transparent });
+      scene = gameId === 'corrida' ? new RaceScene(canvas, { transparent }) : new ArenaScene(canvas, { transparent });
     } catch {
       canvas.remove();
       setFailed(true);
@@ -114,7 +127,7 @@ export function RaceStage({
     const push = () => {
       const state = store.getState();
       derived = deriveFrom(state.participants, derived);
-      scene.setInput(toInput(state, derived, showNames));
+      scene.setInput(toInput(state, derived, showNames, gameId));
     };
     push();
     const unsubscribe = store.subscribe(push);
@@ -136,7 +149,7 @@ export function RaceStage({
       scene.dispose();
       canvas.remove();
     };
-  }, [store, transparent, showNames, webgl, label]);
+  }, [store, transparent, showNames, webgl, label, gameId]);
 
   if (!webgl) return <LanesFallback />;
   return <div ref={hostRef} className="stage__host" />;

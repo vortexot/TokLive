@@ -17,7 +17,7 @@ const FAQ = [
 
 const LIMITS = [
   'A conexão com a LIVE é simulada.',
-  'Só a corrida de obstáculos inicia partidas. Os outros jogos estão em desenvolvimento.',
+  'Os seis jogos iniciam partidas, mas com participantes e eventos simulados. Nenhuma LIVE real está conectada.',
   'Os modelos 3D são formas simples montadas por código, não os assets finais.',
   'O overlay no OBS roda a própria simulação; aberto em outra aba do mesmo navegador, acompanha o painel.',
   'Não há login, cobrança, planos nem banco de dados real.',

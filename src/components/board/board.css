@@ -4,7 +4,7 @@
 .lane {
   position: relative;
   display: grid;
-  grid-template-columns: 2.1rem auto minmax(0, 1fr) minmax(4rem, 9rem) auto;
+  grid-template-columns: 2.1rem auto minmax(6rem, 1fr) minmax(2rem, 5rem) auto;
   align-items: center;
   gap: var(--s-3);
   min-height: 2.9rem;
@@ -93,4 +93,8 @@
   .lane__track {
     display: none;
   }
+}
+
+.lane__tag--fora {
+  color: var(--text-3);
 }

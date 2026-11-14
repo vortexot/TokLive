@@ -95,11 +95,12 @@ describe('game hub', () => {
     expect(await screen.findByText('6 jogos')).toBeInTheDocument();
   });
 
-  it('só a corrida pode ser aberta na arena; os demais mostram "Em breve" desabilitado', async () => {
+  it('todos os jogos podem ser abertos na arena', async () => {
     setup('/game-hub');
     await screen.findByText('6 jogos');
     expect(screen.getByRole('button', { name: 'Abrir na arena: Corrida de obstáculos' })).toBeEnabled();
-    expect(screen.getAllByRole('button', { name: 'Em breve' })).toHaveLength(5);
+    expect(screen.getByRole('button', { name: 'Abrir na arena: Futebol maluco' })).toBeEnabled();
+    expect(screen.queryAllByRole('button', { name: 'Em breve' })).toHaveLength(0);
   });
 });
 
@@ -126,11 +127,10 @@ describe('configuração do jogo', () => {
     expect(screen.getByRole('radio', { name: 'Normal' })).toBeChecked();
   });
 
-  it('jogos em desenvolvimento permitem configurar mas não iniciar', async () => {
+  it('outros jogos também podem ser configurados e iniciados', async () => {
     setup('/game-hub/futebol');
-    expect(await screen.findByRole('button', { name: 'Iniciar' })).toBeDisabled();
-    expect(screen.getByText('Prévia 3D em desenvolvimento')).toBeInTheDocument();
-    expect(screen.getByRole('switch', { name: /Escolha de time por comentário/ })).toBeEnabled();
+    expect(await screen.findByRole('button', { name: 'Iniciar' })).toBeEnabled();
+    expect(screen.getByRole('switch', { name: /Entrada por comentário/ })).toBeEnabled();
   });
 
   it('mostra erro amigável para jogo inexistente', async () => {

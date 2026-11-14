@@ -71,6 +71,14 @@ export function createRace(setup: RaceSetup): MatchState {
       position: null,
       hits: 0,
       lastGift: null,
+      y: 0,
+      vx: 0,
+      vy: 0,
+      alive: true,
+      outAt: null,
+      team: null,
+      score: 0,
+      cooldownUntil: 0,
     };
   });
 
@@ -100,6 +108,7 @@ export function createRace(setup: RaceSetup): MatchState {
     turboUntil: 0,
     racers,
     obstacles,
+    world: null,
     results: null,
     startedAt: setup.startedAt ?? 0,
   };

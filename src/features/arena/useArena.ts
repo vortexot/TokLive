@@ -1,4 +1,4 @@
-import { standings, racerCondition } from '../../domain/race';
+import { describeRacer, racerCondition, standings } from '../../domain/match';
 import type { Participant } from '../../domain/types';
 import type { LaneRow } from '../../components/board/LaneBoard';
 import { formatClock } from '../../lib/format';
@@ -16,6 +16,16 @@ export function participantMap(list: Participant[]): Map<string, Participant> {
   return map;
 }
 
+function rowText(match: NonNullable<AppState['match']>, racer: Parameters<typeof describeRacer>[1]): { progress?: number; value: string } {
+  if (match.gameId === 'corrida') {
+    return {
+      progress: racer.x / match.trackLength,
+      value: racer.finishedAt !== null ? formatClock(racer.finishedAt, true) : `${Math.round(racer.x)} m`,
+    };
+  }
+  return describeRacer(match, racer);
+}
+
 function rowsOf(state: AppState, limit: number): LaneRow[] {
   const match = state.match;
   if (!match) return [];
@@ -29,8 +39,7 @@ function rowsOf(state: AppState, limit: number): LaneRow[] {
         position: i + 1,
         username: p?.username ?? '?',
         seed: p?.characterSeed ?? racer.participantId,
-        progress: racer.x / match.trackLength,
-        value: racer.finishedAt !== null ? formatClock(racer.finishedAt, true) : `${Math.round(racer.x)} m`,
+        ...rowText(match, racer),
         condition: racerCondition(match, racer),
       };
     });

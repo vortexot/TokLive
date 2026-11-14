@@ -199,16 +199,23 @@ describe('personagens', () => {
 });
 
 describe('partida', () => {
-  it('exige jogo escolhido e recusa jogos em desenvolvimento', async () => {
+  it('exige jogo escolhido antes de iniciar', async () => {
     const { store, actions } = await makeApp();
     actions.startMatch();
     expect(store.getState().match).toBeNull();
     expect(store.getState().toasts.at(-1)?.title).toBe('Escolha um jogo');
+  });
 
-    actions.selectGame('futebol');
+  it.each(['chao-de-lava', 'batalha-empurroes', 'batatinha', 'futebol', 'plataformas'] as const)('inicia e conclui uma partida de %s', async (game) => {
+    const { store, actions } = await makeApp();
+    actions.selectGame(game);
     actions.startMatch();
-    expect(store.getState().match).toBeNull();
-    expect(store.getState().toasts.at(-1)?.title).toContain('em desenvolvimento');
+    const match = store.getState().match;
+    expect(match?.gameId).toBe(game);
+    expect(match?.racers.length).toBeGreaterThanOrEqual(4);
+    actions.endMatch();
+    expect(store.getState().match?.status).toBe('encerrada');
+    expect(store.getState().matchHistory[0]?.gameId).toBe(game);
   });
 
   it('completa a fila com participantes recentes e consome a fila', async () => {
