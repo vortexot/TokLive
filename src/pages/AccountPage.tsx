@@ -1,23 +1,63 @@
 import { useState } from 'react';
-import { RotateCcw } from 'lucide-react';
+import { KeyRound, LogOut, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { Dialog } from '../components/ui/Dialog';
 import { TextField } from '../components/ui/Controls';
 import { Pill } from '../components/ui/Misc';
 import { useActions } from '../state/AppProvider';
+import { useAuth } from '../state/AuthProvider';
 import { useAppState } from '../state/store';
 import '../features/settings/settings.css';
 
 export default function AccountPage() {
   const actions = useActions();
+  const auth = useAuth();
+  const backend = auth.backend;
+  const [rotating, setRotating] = useState(false);
   const { profile, handle } = useAppState((s) => ({ profile: s.settings.profile, handle: s.connection.handle }));
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
   const mailInvalid = profile.email.trim() !== '' && !/^\S+@\S+\.\S+$/.test(profile.email) ? 'Informe um e-mail válido.' : null;
 
+  const rotate = async () => {
+    if (!backend) return;
+    setRotating(true);
+    try {
+      await backend.rotateOverlayToken();
+      actions.toast('ok', 'Novo link do overlay', 'O link anterior parou de funcionar. Copie o novo em Overlay OBS.');
+    } catch {
+      actions.toast('erro', 'Não foi possível gerar o link', 'Tente de novo em instantes.');
+    } finally {
+      setRotating(false);
+    }
+  };
+
   return (
     <div className="narrow">
+      {backend ? (
+        <section className="panel" aria-labelledby="acc-session">
+          <header className="panel__head">
+            <h2 className="panel__title" id="acc-session">
+              Sua conta
+            </h2>
+          </header>
+          <div className="set">
+            <p className="set__note">
+              Conectado como <strong>{backend.userEmail ?? 'conta sem e-mail'}</strong>. Os seus participantes, partidas e configurações ficam salvos na sua conta.
+            </p>
+            <div className="set__actions">
+              <Button icon={KeyRound} loading={rotating} onClick={rotate}>
+                Gerar novo link do overlay
+              </Button>
+              <Button icon={LogOut} onClick={() => void auth.signOut()}>
+                Sair
+              </Button>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
       <section className="panel" aria-labelledby="acc-profile">
         <header className="panel__head">
           <h2 className="panel__title" id="acc-profile">
@@ -32,7 +72,9 @@ export default function AccountPage() {
           <p className="set__note">
             @ do TikTok conectado: {handle ? <strong>@{handle}</strong> : 'nenhum'}. Para trocar, use a <Link to="/">visão geral</Link>.
           </p>
-          <p className="set__note">Este perfil fica só neste navegador. Não existe login real nesta etapa, e o TokArena nunca pede a senha do TikTok.</p>
+          <p className="set__note">
+            {backend ? 'Este perfil fica neste navegador.' : 'Este perfil fica só neste navegador. Entre com uma conta para salvar os dados online.'} O TokArena nunca pede a senha do TikTok.
+          </p>
         </div>
       </section>
 

@@ -442,6 +442,8 @@ function joinLobby(state: AppState, actor: Participant, ctx: Ctx): AppState {
   const max = state.gameConfigs[gameId].maxParticipants;
   if (state.lobby.includes(actor.id)) return state;
   if (state.lobby.length >= max) {
+    // Com mil pessoas comentando !entrar, o aviso aparece uma vez, não mil.
+    if (state.toasts.some((t) => t.title === 'Fila cheia')) return state;
     return toastForEvent(state, { tone: 'warn', title: 'Fila cheia', detail: `Limite de ${max} participantes.` }, ctx);
   }
   let s: AppState = { ...state, lobby: [...state.lobby, actor.id] };
@@ -684,7 +686,7 @@ export function setScenario(state: AppState, scenario: AppState['connection']['s
   return { ...state, connection: { ...state.connection, scenario } };
 }
 
-export function setConnectionStatus(state: AppState, status: ConnectionStatus, ctx: Ctx): AppState {
+export function setConnectionStatus(state: AppState, status: ConnectionStatus, ctx: Ctx, real = false): AppState {
   const was = state.connection.status;
   if (was === status) return state;
   const handle = state.connection.handle;
@@ -700,8 +702,8 @@ export function setConnectionStatus(state: AppState, status: ConnectionStatus, c
     },
   };
   s = pushActivity(s, { kind: 'conexao', title: connectionActivityTitle(status), detail: handle ? `@${handle}` : undefined }, ctx);
-  if (status === 'ao-vivo') s = pushToast(s, { tone: 'ok', title: 'LIVE conectada', detail: `Recebendo eventos de @${handle} (simulação).` }, ctx);
-  if (status === 'erro') s = pushToast(s, { tone: 'erro', title: 'Falha de conexão', detail: 'Simulação de erro. Tente conectar novamente.' }, ctx);
+  if (status === 'ao-vivo') s = pushToast(s, { tone: 'ok', title: 'LIVE conectada', detail: `Recebendo eventos de @${handle}${real ? '' : ' (simulação)'}.` }, ctx);
+  if (status === 'erro') s = pushToast(s, { tone: 'erro', title: 'Falha de conexão', detail: real ? 'Não foi possível conectar à LIVE. Confira o @ e tente de novo.' : 'Simulação de erro. Tente conectar novamente.' }, ctx);
   return s;
 }
 

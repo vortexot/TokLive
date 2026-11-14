@@ -5,6 +5,7 @@ import { Dialog } from '../../components/ui/Dialog';
 import { SwitchRow } from '../../components/ui/Controls';
 import { buildOverlayUrl, DEMO_OVERLAY_TOKEN } from '../../services/overlayAuth';
 import { useActions } from '../../state/AppProvider';
+import { useAuth } from '../../state/AuthProvider';
 import { useAppState } from '../../state/store';
 import './overlay-dialog.css';
 
@@ -36,7 +37,9 @@ export function OverlayDialog({ open, onClose }: { open: boolean; onClose: () =>
   const actions = useActions();
   const options = useAppState((s) => s.settings.overlay);
   const [copied, setCopied] = useState(false);
-  const url = buildOverlayUrl(window.location.origin, DEMO_OVERLAY_TOKEN, options);
+  const auth = useAuth();
+  const realToken = auth.backend?.workspace.overlayToken ?? null;
+  const url = buildOverlayUrl(window.location.origin + window.location.pathname, realToken ?? DEMO_OVERLAY_TOKEN, options);
 
   const copy = async () => {
     const ok = await copyText(url);
@@ -70,7 +73,9 @@ export function OverlayDialog({ open, onClose }: { open: boolean; onClose: () =>
           </label>
           <input id="ovd-url" className="input ovd__input" readOnly value={url} onFocus={(e) => e.currentTarget.select()} />
           <p className="field__hint">
-            Token de demonstração. Na versão final, cada criador terá uma URL com token seguro, que pode ser revogado.
+            {realToken
+              ? 'Este link é só seu e funciona sem login, no OBS. Quem tiver o link vê o seu overlay: se vazar, gere um novo na página Conta.'
+              : 'Link de demonstração. Entre com a sua conta para ter um link só seu.'}
           </p>
         </div>
 
@@ -86,7 +91,9 @@ export function OverlayDialog({ open, onClose }: { open: boolean; onClose: () =>
               <li>Deixe a opção de CSS personalizado em branco: o fundo já é transparente.</li>
             </ol>
             <p className="field__hint">
-              Na demonstração, o overlay aberto no OBS roda a própria simulação. Aberto em outra aba deste navegador, ele acompanha o painel em tempo real.
+              {realToken
+                ? 'O overlay acompanha o painel em tempo real: mantenha o painel aberto durante a LIVE.'
+                : 'Na demonstração, o overlay aberto no OBS roda a própria simulação. Aberto em outra aba deste navegador, ele acompanha o painel em tempo real.'}
             </p>
           </section>
 

@@ -58,6 +58,22 @@ export function toSnapshot(state: AppState, now: number): SessionSnapshot {
   };
 }
 
+/**
+ * Versão enxuta para enviar pela internet: só os participantes que o overlay desenha (quem joga, quem espera e o topo
+ * do ranking). O canal em tempo real tem limite de tamanho e um criador pode ter milhares de participantes.
+ */
+export function slimSnapshot(snapshot: SessionSnapshot): SessionSnapshot {
+  const needed = new Set<string>(snapshot.lobby);
+  for (const r of snapshot.match?.racers ?? []) needed.add(r.participantId);
+  const top = snapshot.participants
+    .slice()
+    .sort((a, b) => b.points - a.points || b.xp - a.xp)
+    .slice(0, 12);
+  for (const p of top) needed.add(p.id);
+  const participants = snapshot.participants.filter((p) => needed.has(p.id)).slice(0, 60);
+  return { ...snapshot, participants, activity: snapshot.activity.slice(0, 8), chat: snapshot.chat.slice(-8) };
+}
+
 export function applySnapshot(state: AppState, snap: SessionSnapshot): AppState {
   return {
     ...state,

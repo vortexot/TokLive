@@ -21,8 +21,12 @@ export function resolveOverlayToken(token: string | undefined): OverlayAccess {
   return { valid: true, workspace: 'ambiente-demo' };
 }
 
+/**
+ * O site usa rotas com "#" (funciona no GitHub Pages sem configurar servidor), então o link do overlay é
+ * a página atual + "#/overlay/<token>". `base` é a URL da página sem o "#" (origem + caminho).
+ */
 export function buildOverlayUrl(
-  origin: string,
+  base: string,
   token: string,
   options: { showRanking: boolean; showFeed: boolean; showGoal: boolean; showNames: boolean },
 ): string {
@@ -33,7 +37,7 @@ export function buildOverlayUrl(
   if (!options.showGoal) params.set('meta', '0');
   if (!options.showNames) params.set('nomes', '0');
   const query = params.toString();
-  return `${origin}/overlay/${token}${query ? `?${query}` : ''}`;
+  return `${base.replace(/#.*$/, '')}#/overlay/${token}${query ? `?${query}` : ''}`;
 }
 
 export function overlayOptionsFromSearch(search: string, base: {

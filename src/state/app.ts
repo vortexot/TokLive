@@ -7,7 +7,8 @@ import { createLocalDataService, type DataService } from '../services/dataServic
 import { generateDataset, type DemoDataset } from '../services/mockData';
 import { loadJson, saveJson } from '../services/storage';
 import { eventsForInterval, randomLiveEvent } from './autoSim';
-import { applySnapshot, openChannel, toSnapshot, type Channel } from './channel';
+import { statusFromWorker, type Backend } from '../services/backend';
+import { applySnapshot, openChannel, slimSnapshot, toSnapshot, type Channel, type SessionSnapshot } from './channel';
 import * as engine from './engine';
 import { createStore, type Store } from './store';
 import type { AppState, Ctx, SimulatorState } from './types';
@@ -18,6 +19,10 @@ export interface AppOptions {
   role?: Role;
   persist?: boolean;
   dataService?: DataService;
+  /** Conta real: dados do criador, conexão com a LIVE e overlay pela internet. Sem isto, tudo é demonstração local. */
+  backend?: Backend;
+  /** Overlay com token real: recebe os snapshots do painel pela internet em vez de simular. */
+  overlayFeed?: (onSnapshot: (snapshot: SessionSnapshot) => void) => () => void;
   now?: () => number;
   rng?: () => number;
 }
@@ -62,11 +67,18 @@ export function isValidHandle(raw: string): boolean {
   return engine.HANDLE_PATTERN.test(engine.normalizeHandle(raw));
 }
 
+/** Teto de participantes gravados: acima disso ficam os vistos mais recentemente (o armazenamento tem limite de tamanho). */
+export const MAX_STORED_PARTICIPANTS = 8000;
+
 function toDataset(state: AppState, now: number): DemoDataset {
+  const participants =
+    state.participants.length > MAX_STORED_PARTICIPANTS
+      ? state.participants.slice().sort((a, b) => b.lastSeenAt - a.lastSeenAt).slice(0, MAX_STORED_PARTICIPANTS)
+      : state.participants;
   return {
     version: 1,
     generatedAt: now,
-    participants: state.participants,
+    participants,
     history: state.history,
     today: state.today,
     hourly: state.hourly,
@@ -84,7 +96,8 @@ export function createApp(options: AppOptions = {}): App {
   const persist = options.persist ?? role === 'panel';
   const now = options.now ?? Date.now;
   const rng = options.rng ?? Math.random;
-  const dataService = options.dataService ?? createLocalDataService();
+  const backend = options.backend;
+  const dataService = options.dataService ?? backend?.dataService ?? createLocalDataService();
   const store = createStore<AppState>(engine.createInitialState());
 
   let counter = 0;
@@ -102,6 +115,7 @@ export function createApp(options: AppOptions = {}): App {
     timers.push(setTimeout(fn, ms));
   };
   const setStatus = (status: ConnectionStatus) => update((s, c) => engine.setConnectionStatus(s, status, c));
+  const setRemoteStatus = (status: ConnectionStatus) => update((s, c) => engine.setConnectionStatus(s, status, c, true));
 
   const actions: Actions = {
     bootstrap() {
@@ -131,6 +145,11 @@ export function createApp(options: AppOptions = {}): App {
       clearTimers();
       update((s) => engine.setConnectionHandle(s, handle));
       setStatus('conectando');
+      if (backend) {
+        // Conexão real: o worker faz a ligação e o andamento volta por subscribeLive.
+        backend.requestConnection(handle, 'connected').catch(() => setRemoteStatus('erro'));
+        return true;
+      }
       later(1400, () => {
         const scenario = store.getState().connection.scenario;
         if (scenario === 'falha') return setStatus('erro');
@@ -146,6 +165,12 @@ export function createApp(options: AppOptions = {}): App {
 
     disconnect() {
       clearTimers();
+      if (backend) {
+        const handle = store.getState().connection.handle;
+        if (handle) void backend.requestConnection(handle, 'disconnected').catch(() => undefined);
+        setRemoteStatus('desconectado');
+        return;
+      }
       setStatus('desconectado');
     },
 
@@ -234,7 +259,10 @@ export function createApp(options: AppOptions = {}): App {
 
     const send = () => {
       const s = store.getState();
-      if (s.ready) channel?.post({ type: 'snapshot', snapshot: toSnapshot(s, now()) });
+      if (!s.ready) return;
+      const snapshot = toSnapshot(s, now());
+      channel?.post({ type: 'snapshot', snapshot });
+      backend?.publishSnapshot(slimSnapshot(snapshot));
     };
     channel = openChannel((message) => {
       if (message.type === 'hello') send();
@@ -253,6 +281,28 @@ export function createApp(options: AppOptions = {}): App {
       } satisfies engine.PersistedPrefs);
     };
 
+    // Eventos e andamento da conexão vindos do worker da LIVE.
+    // Com mil espectadores, chegam dezenas de eventos por segundo: aplicam-se em lote, no máximo 10 vezes por segundo.
+    let inbox: LiveEvent[] = [];
+    let inboxTimer: ReturnType<typeof setTimeout> | undefined;
+    const drainInbox = () => {
+      inboxTimer = undefined;
+      const batch = inbox;
+      inbox = [];
+      if (!batch.length) return;
+      update((state, c) => batch.reduce((acc, event) => engine.applyLiveEvent(acc, event, c), state));
+    };
+    const stopLive = backend?.subscribeLive({
+      onEvent: (event) => {
+        inbox.push(event);
+        inboxTimer ??= setTimeout(drainInbox, 100);
+      },
+      onConnection: (row) => {
+        if (row.handle && row.handle !== store.getState().connection.handle) update((s) => engine.setConnectionHandle(s, row.handle as string));
+        setRemoteStatus(statusFromWorker(row.status));
+      },
+    });
+
     const unsubscribe = store.subscribe(() => {
       if (!sendTimer) {
         sendTimer = setTimeout(() => {
@@ -260,13 +310,19 @@ export function createApp(options: AppOptions = {}): App {
           send();
         }, 250);
       }
-      if (persist) {
-        clearTimeout(saveTimer);
-        saveTimer = setTimeout(save, 600);
+      // Grava no máximo a cada 3 s, mesmo com eventos o tempo todo (um "debounce" nunca gravaria durante a LIVE).
+      if (persist && !saveTimer) {
+        saveTimer = setTimeout(() => {
+          saveTimer = undefined;
+          save();
+        }, 3000);
       }
     });
 
     return () => {
+      stopLive?.();
+      clearTimeout(inboxTimer);
+      drainInbox();
       unsubscribe();
       clearTimeout(saveTimer);
       clearTimeout(sendTimer);
@@ -277,6 +333,11 @@ export function createApp(options: AppOptions = {}): App {
 
   /** Overlay: usa os dados do painel quando ele está aberto no mesmo navegador; senão, simula sozinho. */
   function startOverlayEffects(): () => void {
+    if (options.overlayFeed) {
+      // Token real: nada de simulação. Espera o painel publicar e mostra o que ele mandar.
+      store.setState((s) => ({ ...s, ready: true }));
+      return options.overlayFeed((snapshot) => store.setState((s) => applySnapshot(s, snapshot)));
+    }
     let synced = false;
     let standalone = false;
     let autoplayTimer: ReturnType<typeof setTimeout> | undefined;

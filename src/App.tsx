@@ -1,7 +1,10 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useMemo } from 'react';
 import { HashRouter, Route, Routes } from 'react-router-dom';
 import { AppShell } from './components/layout/AppShell';
 import { AppProvider } from './state/AppProvider';
+import { createApp } from './state/app';
+import { AuthProvider, useAuth } from './state/AuthProvider';
+import LoginPage from './pages/LoginPage';
 import AccountPage from './pages/AccountPage';
 import ArenaPage from './pages/ArenaPage';
 import CharactersPage from './pages/CharactersPage';
@@ -18,9 +21,37 @@ import StatsPage from './pages/StatsPage';
 // O overlay carrega separado: o OBS não precisa do painel inteiro.
 const OverlayRoute = lazy(() => import('./pages/OverlayRoute'));
 
-function PanelRoot() {
+function Splash({ text, action }: { text: string; action?: { label: string; run: () => void } }) {
   return (
-    <AppProvider role="panel">
+    <main className="login">
+      <p role="status" style={{ color: 'var(--text-2)', textAlign: 'center' }}>
+        {text}
+        {action ? (
+          <>
+            <br />
+            <button type="button" className="login__demo" onClick={action.run}>
+              {action.label}
+            </button>
+          </>
+        ) : null}
+      </p>
+    </main>
+  );
+}
+
+/** Painel: com backend configurado exige login (ou a demonstração escolhida de propósito). */
+function PanelRoot() {
+  const auth = useAuth();
+  const backend = auth.status === 'signed-in' ? auth.backend : null;
+  // Um app novo por conta: trocar de usuário não pode herdar o estado do anterior.
+  const app = useMemo(() => (backend ? createApp({ role: 'panel', backend }) : undefined), [backend]);
+
+  if (auth.status === 'loading') return <Splash text="Carregando…" />;
+  if (auth.status === 'signed-out') return <LoginPage />;
+  if (auth.status === 'error') return <Splash text={auth.error ?? 'Não foi possível abrir a sua conta.'} action={{ label: 'Tentar de novo', run: auth.retry }} />;
+
+  return (
+    <AppProvider key={backend?.workspace.id ?? 'demo'} role="panel" app={app}>
       <AppShell />
     </AppProvider>
   );
@@ -58,7 +89,9 @@ export function AppRoutes() {
 export default function App() {
   return (
     <HashRouter>
-      <AppRoutes />
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
     </HashRouter>
   );
 }

@@ -6,6 +6,8 @@ import { createRng } from '../domain/prng';
 import { createLocalDataService } from '../services/dataService';
 import { createApp, type App, type Role } from '../state/app';
 import { AppFactoryContext, AppProvider } from '../state/AppProvider';
+import { StaticAuth } from '../state/AuthProvider';
+import { buildOverlayUrl } from '../services/overlayAuth';
 import { Toasts } from '../components/ui/Toasts';
 
 function setup(path = '/') {
@@ -301,5 +303,36 @@ describe('avisos', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe('conta e link do overlay', () => {
+  it('com backend configurado e sem sessão, mostra o login e permite seguir na demonstração', async () => {
+    const useDemo = vi.fn();
+    const signIn = vi.fn().mockResolvedValue('E-mail ou senha incorretos.');
+    render(
+      <StaticAuth value={{ status: 'signed-out', useDemo, signIn }}>
+        <MemoryRouter initialEntries={['/']}>
+          <AppRoutes />
+        </MemoryRouter>
+      </StaticAuth>,
+    );
+    expect(await screen.findByRole('heading', { level: 1, name: 'Entrar no TokArena' })).toBeInTheDocument();
+    const enter = screen.getByRole('button', { name: 'Entrar' });
+    expect(enter).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'ana@exemplo.com' } });
+    fireEvent.change(screen.getByLabelText('Senha'), { target: { value: 'segredo1' } });
+    expect(enter).toBeEnabled();
+    fireEvent.click(enter);
+    expect(await screen.findByRole('alert')).toHaveTextContent('E-mail ou senha incorretos.');
+    expect(signIn).toHaveBeenCalledWith('ana@exemplo.com', 'segredo1');
+    fireEvent.click(screen.getByRole('button', { name: /Continuar na demonstração/ }));
+    expect(useDemo).toHaveBeenCalled();
+  });
+
+  it('o link do overlay usa "#" para funcionar no GitHub Pages e só grava opções fora do padrão', () => {
+    const on = { showRanking: true, showFeed: true, showGoal: true, showNames: true };
+    expect(buildOverlayUrl('https://vortexot.github.io/TokLive/', 'abc123', on)).toBe('https://vortexot.github.io/TokLive/#/overlay/abc123');
+    expect(buildOverlayUrl('http://localhost:5173/app.html#/arena', 'abc123', { ...on, showFeed: false, showNames: false })).toBe('http://localhost:5173/app.html#/overlay/abc123?feed=0&nomes=0');
   });
 });

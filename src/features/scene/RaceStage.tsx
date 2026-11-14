@@ -4,6 +4,7 @@ import { standings } from '../../domain/match';
 import type { GameId } from '../../domain/types';
 import type { CharacterSpec, Participant } from '../../domain/types';
 import { Avatar } from '../../components/avatar/AvatarSvg';
+import { participantMap } from '../arena/useArena';
 import { useAppState, useAppStore } from '../../state/store';
 import type { AppState } from '../../state/types';
 import { ArenaScene } from './arenaScene';
@@ -17,38 +18,53 @@ function specFor(seed: string): CharacterSpec {
   let spec = specCache.get(seed);
   if (!spec) {
     spec = generateCharacter(seed);
-    if (specCache.size > 600) specCache.clear();
+    if (specCache.size > 2000) specCache.clear();
     specCache.set(seed, spec);
   }
   return spec;
 }
 
-interface Derived {
-  participants: Participant[];
-  racers: Map<string, SceneRacer>;
-  top: string[];
+/** Participantes para a prévia quando não há partida: os de maior XP, recalculados no máximo a cada 3 s. */
+function createTopPicker() {
+  let at = 0;
+  let top: string[] = [];
+  let source: Participant[] | null = null;
+  return (participants: Participant[], now: number): string[] => {
+    if (source !== participants && now - at > 3000) {
+      at = now;
+      source = participants;
+      top = participants
+        .slice()
+        .sort((a, b) => b.xp - a.xp)
+        .slice(0, 10)
+        .map((p) => p.id);
+    }
+    return top;
+  };
 }
 
-/** Deriva o mapa de personagens só quando a lista de participantes muda de identidade. */
-function deriveFrom(participants: Participant[], previous: Derived | null): Derived {
-  if (previous && previous.participants === participants) return previous;
+/**
+ * Monta a entrada da cena só com os personagens que aparecem (quem joga, quem espera e a prévia).
+ * Com milhares de participantes, nada aqui pode crescer com o tamanho da lista.
+ */
+function toInput(state: AppState, showNames: boolean, gameId: GameId | undefined, pickTop: ReturnType<typeof createTopPicker>): SceneInput {
+  const people = participantMap(state.participants);
   const racers = new Map<string, SceneRacer>();
-  for (const p of participants) racers.set(p.id, { id: p.id, username: p.username, spec: specFor(p.characterSeed) });
-  const top = participants
-    .slice()
-    .sort((a, b) => b.xp - a.xp)
-    .slice(0, 10)
-    .map((p) => p.id);
-  return { participants, racers, top };
-}
-
-function toInput(state: AppState, derived: Derived, showNames: boolean, gameId: GameId | undefined): SceneInput {
-  const lobby = state.lobby.filter((id) => derived.racers.has(id));
+  const need = (id: string) => {
+    if (racers.has(id)) return;
+    const p = people.get(id);
+    if (p) racers.set(id, { id: p.id, username: p.username, spec: specFor(p.characterSeed) });
+  };
+  state.match?.racers.forEach((r) => need(r.participantId));
+  state.lobby.slice(0, 40).forEach(need);
+  const lobby = state.lobby.filter((id) => racers.has(id));
+  const top = lobby.length >= 4 ? [] : pickTop(state.participants, performance.now());
+  top.forEach(need);
   return {
     match: state.match,
     gameId,
-    racers: derived.racers,
-    previewIds: lobby.length >= 4 ? lobby : [...lobby, ...derived.top.filter((id) => !lobby.includes(id))].slice(0, 10),
+    racers,
+    previewIds: lobby.length >= 4 ? lobby : [...lobby, ...top.filter((id) => !lobby.includes(id))].slice(0, 10),
     showNames,
   };
 }
@@ -123,14 +139,18 @@ export function RaceStage({
       setFailed(true);
       return;
     }
-    let derived: Derived | null = null;
-    const push = () => {
-      const state = store.getState();
-      derived = deriveFrom(state.participants, derived);
-      scene.setInput(toInput(state, derived, showNames, gameId));
-    };
+    const pickTop = createTopPicker();
+    const push = () => scene.setInput(toInput(store.getState(), showNames, gameId, pickTop));
     push();
-    const unsubscribe = store.subscribe(push);
+    // Vários eventos por quadro viram uma única montagem de entrada.
+    let queued = 0;
+    const unsubscribe = store.subscribe(() => {
+      if (queued) return;
+      queued = requestAnimationFrame(() => {
+        queued = 0;
+        push();
+      });
+    });
 
     const fit = () => scene.resize(host.clientWidth, host.clientHeight);
     fit();
@@ -146,6 +166,7 @@ export function RaceStage({
       document.removeEventListener('visibilitychange', onVisibility);
       observer?.disconnect();
       unsubscribe();
+      cancelAnimationFrame(queued);
       scene.dispose();
       canvas.remove();
     };

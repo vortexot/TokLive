@@ -195,3 +195,29 @@ export function generateDataset(now: number, seedKey = 'tokarena-demo'): DemoDat
     gameConfigs: defaultGameConfigs(),
   };
 }
+
+/** Conjunto vazio de uma conta nova: nenhum participante, nenhum dado inventado. */
+export function emptyDataset(now: number): DemoDataset {
+  const history: DayPoint[] = Array.from({ length: HISTORY_DAYS - 1 }, (_, i) => ({
+    date: dateKey(now - (HISTORY_DAYS - 1 - i) * DAY_MS),
+    participants: 0,
+    newParticipants: 0,
+    matches: 0,
+    events: 0,
+    playMinutes: 0,
+  }));
+  return {
+    version: 1,
+    generatedAt: now,
+    participants: [],
+    history,
+    today: { date: dateKey(now), participants: 0, newParticipants: 0, matches: 0, events: 0, playMinutes: 0 },
+    hourly: new Array<number>(24).fill(0),
+    gameOpens: { corrida: 0, 'chao-de-lava': 0, 'batalha-empurroes': 0, batatinha: 0, futebol: 0, plataformas: 0 },
+    matchHistory: [],
+    rankPrev: {},
+    bestRaceSeconds: null,
+    counters: { likes: 0, comments: 0, gifts: 0, shares: 0, follows: 0, events: 0 },
+    gameConfigs: defaultGameConfigs(),
+  };
+}
