@@ -22,27 +22,43 @@ Requer Node.js 20 ou superior.
 
 ```bash
 npm install
-npm run dev        # painel em http://localhost:5173
+npm run dev        # abre o painel em http://localhost:5173/app.html
 npm test           # 88 testes (domínio, motor de eventos e interface)
 npm run typecheck
-npm run build
+npm run build      # gera o site publicado na raiz (index.html + assets/)
 ```
 
-O overlay de demonstração está em `http://localhost:5173/overlay/demo-arena-7k2f9x`. Qualquer token no formato `demo-...` é aceito.
+O overlay de demonstração está em `http://localhost:5173/app.html#/overlay/demo-arena-7k2f9x`. Qualquer token no formato `demo-...` é aceito.
+
+### Publicação (GitHub Pages)
+
+O site publicado: **https://vortexot.github.io/TokLive/**
+
+O Pages serve a raiz da branch `main`. Por isso o projeto é plano (sem pastas aninhadas) e o build escreve direto na raiz:
+
+- `app.html` é a página de entrada do **código-fonte** (usada por `npm run dev`).
+- `npm run build` gera `index.html` e `assets/` na raiz, que é o que o Pages publica.
+- Para atualizar o site: `npm run build`, commit de `index.html` e `assets/`, e push na `main`.
+- As rotas usam `#` (`/#/game-hub`) para funcionar no Pages sem configuração de servidor.
 
 ### Como testar
 
 1. Abra a **Visão geral** e clique em **Conectar LIVE** (a conexão é simulada).
 2. No **Game Hub**, abra a **Corrida de obstáculos** e clique em **Iniciar**.
 3. Abra o **Simulador** (botão no cabeçalho ou `Shift + D`) e dispare eventos: presente de impulso, curtidas até encher a meta (turbo coletivo), comentário `!entrar`.
-4. Abra `/overlay/demo-arena-7k2f9x?debug=1` **em outra aba** para ver o overlay acompanhar o painel.
+4. Abra `/#/overlay/demo-arena-7k2f9x` **em outra aba** para ver o overlay acompanhar o painel.
 
 No OBS, a fonte de navegador roda em outro processo e não compartilha o armazenamento do navegador: lá o overlay executa a própria simulação.
 
 ## Estrutura
 
 ```
-apps/web/src/
+app.html       Entrada do código-fonte (dev)
+index.html     Site publicado (gerado pelo build)
+assets/        Arquivos gerados pelo build
+public/        Arquivos estáticos copiados no build
+scripts/       Utilitários do build
+src/
   domain/      Regras puras: simulação da corrida, ranking, personagens, catálogo, níveis
   state/       Motor de eventos e de partida (funções puras), store, ações e temporizadores
   services/    Camada de dados assíncrona (hoje local), persistência, resolução do token do overlay
