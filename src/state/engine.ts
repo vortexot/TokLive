@@ -9,6 +9,7 @@ import { pick, shuffle } from '../domain/prng';
 import {
   advanceMatch,
   applyGiftPower,
+  applyLikeBoost,
   applyTurbo,
   createMatch,
   endMatchEarly,
@@ -36,6 +37,8 @@ const CHAT_LIMIT = 40;
 const EFFECT_LIFETIME_MS = 9000;
 const TURBO_SECONDS = 6;
 const MIN_FILL = 12;
+/** Curtidas acumuladas por um espectador que garantem uma vaga na fila. */
+export const LIKES_FOR_LOBBY = 50;
 
 /* ---------- Construção do estado inicial ---------- */
 
@@ -259,6 +262,21 @@ function resolveActor(state: AppState, raw: string | undefined, ctx: Ctx): Parti
   return pickParticipant(state, ctx);
 }
 
+/**
+ * Quem interage, mas ainda não tem personagem, ganha um: presente, curtida e compartilhamento sempre beneficiam
+ * quem os fez, mesmo sem ter seguido antes. Sem usuário informado (simulador), sorteia um participante.
+ */
+function ensureActor(state: AppState, raw: string | undefined, ctx: Ctx): { state: AppState; actor: Participant | undefined } {
+  const name = normalizeUsername(raw);
+  if (!name) return { state, actor: pickParticipant(state, ctx) };
+  const found = findByUsername(state, name);
+  if (found) return { state, actor: found };
+  const added = addParticipant(state, name, ctx);
+  let s = pushActivity(added.state, { kind: 'participante', title: 'Novo participante', detail: `@${name}`, username: name }, ctx);
+  s = pushActivity(s, { kind: 'personagem', title: 'Personagem criado', detail: `@${name}`, username: name }, ctx);
+  return { state: s, actor: added.participant };
+}
+
 export function applyLiveEvent(input: AppState, event: LiveEvent, ctx: Ctx): AppState {
   switch (event.type) {
     case 'follow': {
@@ -278,15 +296,17 @@ export function applyLiveEvent(input: AppState, event: LiveEvent, ctx: Ctx): App
     }
 
     case 'comment': {
-      const actor = resolveActor(input, event.username, ctx);
-      const username = actor?.username ?? normalizeUsername(event.username) ?? 'espectador';
       const text = event.text.trim().slice(0, 140);
       if (!text) return input;
       const lower = text.toLowerCase();
       const command = /^!entrar\b/.test(lower) ? ('entrar' as const) : /^!voto\s+[12]\b/.test(lower) ? ('voto' as const) : undefined;
+      // Só quem usa um comando ganha personagem pelo comentário; conversa comum não cria ninguém.
+      const resolved = command === 'entrar' ? ensureActor(input, event.username, ctx) : { state: input, actor: resolveActor(input, event.username, ctx) };
+      const actor = resolved.actor;
+      const username = actor?.username ?? normalizeUsername(event.username) ?? 'espectador';
       let s: AppState = {
-        ...input,
-        chat: [...input.chat, { id: ctx.id('c'), at: ctx.now, username, text, command }].slice(-CHAT_LIMIT),
+        ...resolved.state,
+        chat: [...resolved.state.chat, { id: ctx.id('c'), at: ctx.now, username, text, command }].slice(-CHAT_LIMIT),
       };
       s = bumpEvent(s, ctx, { comments: 1 });
       if (actor) s = touch(s, actor.id, ctx);
@@ -299,19 +319,35 @@ export function applyLiveEvent(input: AppState, event: LiveEvent, ctx: Ctx): App
 
     case 'like': {
       const count = Math.max(1, Math.min(5000, Math.floor(event.count)));
-      let s = bumpEvent(input, ctx, { likes: count });
-      const actor = resolveActor(input, event.username, ctx);
-      if (actor) s = touch(s, actor.id, ctx);
+      const resolved = ensureActor(input, event.username, ctx);
+      let s = bumpEvent(resolved.state, ctx, { likes: count });
+      const actor = resolved.actor;
+      if (actor) {
+        const before = actor.likes ?? 0;
+        const after = before + count;
+        s = touch(s, actor.id, ctx, (p) => ({ likes: after, xp: p.xp + Math.floor(after / 10) - Math.floor(before / 10) }));
+        // Benefício individual: as curtidas viram impulso para o personagem de quem curtiu.
+        if (s.match && isMatchActive(s.match) && getRuleValue(s, 'impulso-curtidas')) {
+          s = { ...s, match: applyLikeBoost(s.match, actor.id, count) };
+        }
+        // Quem curte bastante garante vaga na próxima partida.
+        const racing = racingIds(s.match);
+        if (before < LIKES_FOR_LOBBY && after >= LIKES_FOR_LOBBY && !racing.has(actor.id) && getRuleValue(s, 'entrada-por-comentario')) {
+          s = joinLobby(s, s.participants.find((p) => p.id === actor.id) as Participant, ctx);
+        }
+      }
       s = pushLikeActivity(s, count, ctx);
       return addGoalProgress(s, count, ctx);
     }
 
     case 'gift': {
       const gift = getGift(event.gift);
-      const actor = resolveActor(input, event.username, ctx);
+      const resolved = ensureActor(input, event.username, ctx);
+      const actor = resolved.actor;
       const username = actor?.username ?? normalizeUsername(event.username) ?? 'espectador';
-      let s = bumpEvent(input, ctx, { gifts: 1 });
-      if (actor) s = touch(s, actor.id, ctx, (p) => ({ xp: p.xp + 5 }));
+      let s = bumpEvent(resolved.state, ctx, { gifts: 1 });
+      // Benefício de quem presenteia: XP e pontos proporcionais ao valor, poder na partida e vaga na fila.
+      if (actor) s = touch(s, actor.id, ctx, (p) => ({ xp: p.xp + 5 + gift.value, points: p.points + Math.round(gift.value / 3) }));
       s = pushActivity(s, { kind: 'presente', title: `${gift.name} recebido`, detail: `@${username} · ${gift.powerLabel}`, username }, ctx);
       s = pushEffect(s, 'presente', `${gift.name} de @${username}`, gift.effect, ctx);
       s = toastForEvent(s, { tone: 'ok', title: `@${username} enviou ${gift.name}`, detail: gift.effect }, ctx);
@@ -319,13 +355,17 @@ export function applyLiveEvent(input: AppState, event: LiveEvent, ctx: Ctx): App
       if (s.match && isMatchActive(s.match) && actor && rule) {
         s = { ...s, match: applyGiftPower(s.match, actor.id, event.gift) };
       }
+      if (actor && !racingIds(s.match).has(actor.id) && !s.lobby.includes(actor.id)) {
+        s = joinLobbyFirst(s, s.participants.find((p) => p.id === actor.id) as Participant, ctx);
+      }
       return s;
     }
 
     case 'share': {
-      const actor = resolveActor(input, event.username, ctx);
+      const resolved = ensureActor(input, event.username, ctx);
+      const actor = resolved.actor;
       const username = actor?.username ?? 'espectador';
-      let s = bumpEvent(input, ctx, { shares: 1 });
+      let s = bumpEvent(resolved.state, ctx, { shares: 1 });
       if (actor) s = touch(s, actor.id, ctx, (p) => ({ xp: p.xp + 10 }));
       s = pushActivity(s, { kind: 'compartilhamento', title: 'LIVE compartilhada', detail: `@${username} · +10 XP de bônus`, username }, ctx);
       return toastForEvent(s, { tone: 'info', title: `@${username} compartilhou a LIVE`, detail: 'Bônus de 10 XP.' }, ctx);
@@ -407,6 +447,16 @@ function joinLobby(state: AppState, actor: Participant, ctx: Ctx): AppState {
   let s: AppState = { ...state, lobby: [...state.lobby, actor.id] };
   s = pushActivity(s, { kind: 'participante', title: 'Entrou na fila', detail: `@${actor.username}`, username: actor.username }, ctx);
   return s;
+}
+
+/** Presenteadores furam a fila: entram na frente de quem já espera (respeitando o limite do jogo). */
+function joinLobbyFirst(state: AppState, actor: Participant, ctx: Ctx): AppState {
+  const gameId = state.selectedGameId ?? 'corrida';
+  const max = state.gameConfigs[gameId].maxParticipants;
+  if (state.lobby.includes(actor.id)) return state;
+  const lobby = [actor.id, ...state.lobby].slice(0, max);
+  const s: AppState = { ...state, lobby };
+  return pushActivity(s, { kind: 'participante', title: 'Vaga garantida por presente', detail: `@${actor.username} entrou na frente da fila`, username: actor.username }, ctx);
 }
 
 /* ---------- Personagens ---------- */

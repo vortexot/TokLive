@@ -5,7 +5,7 @@ import { ARENA_GAMES, soccerWinner, type ArenaSetup } from './arena';
 import * as race from './race';
 import type { GameId, MatchResult, MatchState, Racer } from './types';
 
-export { applyGiftPower, applyTurbo, pauseMatch, resumeMatch } from './race';
+export { applyGiftPower, applyLikeBoost, applyTurbo, pauseMatch, resumeMatch } from './race';
 
 const SUBSTEP = 0.05;
 

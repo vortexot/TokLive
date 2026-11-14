@@ -49,6 +49,7 @@ function baseRacer(participantId: string, i: number, seed: number, lane: number)
     team: null,
     score: 0,
     cooldownUntil: 0,
+    likeCharge: 0,
   };
 }
 

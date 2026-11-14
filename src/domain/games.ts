@@ -44,6 +44,12 @@ const RACE_RULES: GameDef['rules'] = [
     default: true,
   },
   {
+    id: 'impulso-curtidas',
+    label: 'Curtidas dão impulso a quem curtiu',
+    hint: 'A cada 20 curtidas de um espectador que está na partida, o personagem dele ganha um impulso curto.',
+    default: true,
+  },
+  {
     id: 'poderes-presentes',
     label: 'Presentes ativam poderes',
     hint: 'Impulso, escudo e outros efeitos para o personagem de quem enviou o presente.',
@@ -56,6 +62,7 @@ function arenaRules(entryLabel: string, powers: string, turbo: string): GameDef[
     { id: 'entrada-por-comentario', label: entryLabel, hint: 'O espectador entra na fila ao comentar !entrar.', default: true },
     { id: 'completar-fila', label: 'Completar a fila com participantes recentes', hint: 'Se faltar gente, a partida chama participantes que já têm personagem.', default: true },
     { id: 'turbo-curtidas', label: 'Turbo coletivo ao bater a meta de curtidas', hint: turbo, default: true },
+    { id: 'impulso-curtidas', label: 'Curtidas dão impulso a quem curtiu', hint: 'A cada 20 curtidas de um espectador que está na partida, o personagem dele ganha um impulso curto.', default: true },
     { id: 'poderes-presentes', label: 'Presentes ativam poderes', hint: powers, default: true },
   ];
 }

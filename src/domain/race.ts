@@ -79,6 +79,7 @@ export function createRace(setup: RaceSetup): MatchState {
       team: null,
       score: 0,
       cooldownUntil: 0,
+      likeCharge: 0,
     };
   });
 
@@ -271,6 +272,28 @@ export function applyGiftPower(state: MatchState, participantId: string, giftId:
       return { ...r, stunnedUntil: Math.max(r.stunnedUntil, state.t + gift.durationSec) };
     }
     return r;
+  });
+  return { ...state, racers };
+}
+
+/** Curtidas de quem está na partida viram impulso para o próprio personagem: a cada 20, 1,5 s (no máximo 5 s acumulados). */
+export const LIKES_PER_BOOST = 20;
+export const LIKE_BOOST_SECONDS = 1.5;
+const LIKE_BOOST_CAP_SECONDS = 5;
+
+export function applyLikeBoost(state: MatchState, participantId: string, count: number): MatchState {
+  if (state.status === 'encerrada' || count <= 0) return state;
+  if (!state.racers.some((r) => r.participantId === participantId)) return state;
+  const racers = state.racers.map((r) => {
+    if (r.participantId !== participantId) return r;
+    const charge = r.likeCharge + count;
+    const pulses = Math.floor(charge / LIKES_PER_BOOST);
+    const next = { ...r, likeCharge: charge % LIKES_PER_BOOST };
+    if (pulses > 0 && r.finishedAt === null && r.alive) {
+      const base = Math.max(r.boostUntil, state.t);
+      next.boostUntil = Math.min(base + pulses * LIKE_BOOST_SECONDS, state.t + LIKE_BOOST_CAP_SECONDS);
+    }
+    return next;
   });
   return { ...state, racers };
 }

@@ -71,6 +71,8 @@ export interface GameStats {
 export interface Participant {
   id: string;
   username: string;
+  /** Curtidas enviadas nesta sessão (a partir de 50, o espectador ganha vaga na fila). */
+  likes?: number;
   characterSeed: string;
   joinedAt: number;
   lastSeenAt: number;
@@ -180,6 +182,8 @@ export interface Racer {
   score: number;
   /** Instante em que pode agir de novo (chute, empurrão, salto). */
   cooldownUntil: number;
+  /** Curtidas deste jogador ainda não convertidas em impulso (a cada 20, um impulso curto). */
+  likeCharge: number;
 }
 
 export type World =

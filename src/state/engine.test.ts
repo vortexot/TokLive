@@ -147,13 +147,96 @@ describe('eventos da LIVE', () => {
     actions.emit({ type: 'gift', username: user.username, gift: 'foguete' });
     let s = store.getState();
     expect(s.counters.gifts).toBeGreaterThan(0);
-    expect(s.activity[0]).toMatchObject({ kind: 'presente' });
+    expect(s.activity.some((a) => a.kind === 'presente')).toBe(true);
     expect(s.effects.at(-1)?.kind).toBe('presente');
-    expect(s.participants.find((p) => p.id === user.id)!.xp).toBe(user.xp + 5);
+    // 5 de base + 30 pelo valor do Foguete.
+    expect(s.participants.find((p) => p.id === user.id)!.xp).toBe(user.xp + 35);
 
     actions.emit({ type: 'share', username: user.username });
     s = store.getState();
-    expect(s.participants.find((p) => p.id === user.id)!.xp).toBe(user.xp + 15);
+    expect(s.participants.find((p) => p.id === user.id)!.xp).toBe(user.xp + 45);
+  });
+
+  describe('quem interage é beneficiado', () => {
+    it('presente de quem nunca seguiu cria o personagem, garante vaga na frente da fila e soma pontos', async () => {
+      const { store, actions } = await makeApp();
+      actions.selectGame('corrida');
+      actions.emit({ type: 'comment', username: 'fila.antiga', text: '!entrar' });
+      actions.emit({ type: 'gift', username: 'Novo.Doador', gift: 'escudo' });
+      const s = store.getState();
+      const donor = s.participants.find((p) => p.username === 'novo.doador');
+      expect(donor).toBeDefined();
+      expect(donor!.points).toBe(5);
+      expect(s.lobby[0]).toBe(donor!.id);
+      expect(s.activity.some((a) => a.title === 'Vaga garantida por presente')).toBe(true);
+    });
+
+    it('presente durante a partida dá o poder ao personagem de quem enviou, em qualquer jogo', async () => {
+      for (const game of ['corrida', 'chao-de-lava', 'batalha-empurroes', 'batatinha', 'futebol', 'plataformas'] as const) {
+        const { store, actions } = await makeApp();
+        actions.selectGame(game);
+        actions.startMatch();
+        const racer = store.getState().match!.racers[0]!;
+        const who = store.getState().participants.find((p) => p.id === racer.participantId)!;
+        actions.emit({ type: 'gift', username: who.username, gift: 'escudo' });
+        const after = store.getState().match!.racers.find((r) => r.participantId === racer.participantId)!;
+        expect(after.shieldUntil, game).toBeGreaterThan(0);
+        actions.emit({ type: 'gift', username: who.username, gift: 'foguete' });
+        expect(store.getState().match!.racers.find((r) => r.participantId === racer.participantId)!.boostUntil, game).toBeGreaterThan(0);
+      }
+    });
+
+    it('curtidas de quem está na partida viram impulso para o próprio personagem (a cada 20)', async () => {
+      const { store, actions } = await makeApp();
+      actions.selectGame('corrida');
+      actions.startMatch();
+      const [a, b] = store.getState().match!.racers;
+      const ua = store.getState().participants.find((p) => p.id === a!.participantId)!;
+      actions.emit({ type: 'like', username: ua.username, count: 19 });
+      let m = store.getState().match!;
+      expect(m.racers.find((r) => r.participantId === a!.participantId)!.boostUntil).toBe(0);
+      actions.emit({ type: 'like', username: ua.username, count: 1 });
+      m = store.getState().match!;
+      expect(m.racers.find((r) => r.participantId === a!.participantId)!.boostUntil).toBeGreaterThan(0);
+      expect(m.racers.find((r) => r.participantId === b!.participantId)!.boostUntil).toBe(0);
+    });
+
+    it('o impulso das curtidas acumula, mas tem teto', async () => {
+      const { store, actions } = await makeApp();
+      actions.selectGame('corrida');
+      actions.startMatch();
+      const r = store.getState().match!.racers[0]!;
+      const u = store.getState().participants.find((p) => p.id === r.participantId)!;
+      actions.emit({ type: 'like', username: u.username, count: 2000 });
+      const boost = store.getState().match!.racers[0]!.boostUntil;
+      expect(boost).toBeLessThanOrEqual(5 + 1e-9);
+    });
+
+    it('quem curte bastante cria personagem e ganha vaga na fila ao passar de 50 curtidas', async () => {
+      const { store, actions } = await makeApp();
+      actions.selectGame('corrida');
+      actions.emit({ type: 'like', username: 'curtidor.fiel', count: 30 });
+      let s = store.getState();
+      const p = s.participants.find((x) => x.username === 'curtidor.fiel')!;
+      expect(p).toBeDefined();
+      expect(s.lobby).not.toContain(p.id);
+      actions.emit({ type: 'like', username: 'curtidor.fiel', count: 25 });
+      s = store.getState();
+      expect(s.lobby).toContain(p.id);
+      expect(s.participants.find((x) => x.id === p.id)!.xp).toBe(5);
+    });
+
+    it('conversa comum não cria personagem, mas !entrar cria', async () => {
+      const { store, actions } = await makeApp();
+      actions.emit({ type: 'comment', username: 'so.conversa', text: 'oi pessoal' });
+      expect(store.getState().participants.some((p) => p.username === 'so.conversa')).toBe(false);
+      actions.selectGame('corrida');
+      actions.emit({ type: 'comment', username: 'quer.jogar', text: '!entrar' });
+      const s = store.getState();
+      const p = s.participants.find((x) => x.username === 'quer.jogar');
+      expect(p).toBeDefined();
+      expect(s.lobby).toContain(p!.id);
+    });
   });
 
   it('desliga os avisos quando a preferência pede', async () => {

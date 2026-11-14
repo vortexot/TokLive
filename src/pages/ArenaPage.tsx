@@ -17,7 +17,7 @@ function GiftsLegend() {
         <h2 className="panel__title" id="gifts-title">
           Poderes dos presentes
         </h2>
-        <span className="panel__sub">simulados</span>
+        <span className="panel__sub">e curtidas</span>
       </header>
       <ul className="gifts">
         {GIFTS.map((g) => (
@@ -26,6 +26,10 @@ function GiftsLegend() {
             <span>{g.effect}</span>
           </li>
         ))}
+        <li className="gifts__item">
+          <strong>Curtidas</strong>
+          <span>A cada 20 de quem está na partida: impulso curto para o próprio personagem</span>
+        </li>
       </ul>
     </section>
   );
