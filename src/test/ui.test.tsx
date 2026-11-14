@@ -336,3 +336,43 @@ describe('conta e link do overlay', () => {
     expect(buildOverlayUrl('http://localhost:5173/app.html#/arena', 'abc123', { ...on, showFeed: false, showNames: false })).toBe('http://localhost:5173/app.html#/overlay/abc123?feed=0&nomes=0');
   });
 });
+
+describe('palco (amostra visual)', () => {
+  it('abre pelo menu, mostra o quadro inicial e troca de quadro', async () => {
+    setup('/');
+    await ready();
+    fireEvent.click(screen.getByRole('link', { name: 'Palco' }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Palco' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Palco: Papo Reto' })).toBeInTheDocument();
+    expect(screen.getByText(/As falas são de roteiro/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tribunal da LIVE' }));
+    const stage = screen.getByRole('group', { name: 'Palco: Tribunal da LIVE' });
+    // Dois anfitriões em cena no tribunal.
+    expect(within(stage).getAllByRole('img')).toHaveLength(2);
+    expect(within(stage).getByText(/!confesso/, { selector: 'b' })).toBeInTheDocument();
+  });
+
+  it('coloca um pedido digitado na frente do roteiro', async () => {
+    setup('/palco');
+    await ready();
+    const field = await screen.findByLabelText('Testar um pedido');
+    const send = screen.getByRole('button', { name: 'Enviar ao palco' });
+    expect(send).toBeDisabled();
+    fireEvent.change(field, { target: { value: 'qual o melhor jogo?' } });
+    fireEvent.click(send);
+    const stage = screen.getByRole('group', { name: 'Palco: Papo Reto' });
+    expect(within(stage).getByText('@voce')).toBeInTheDocument();
+    expect(within(stage).getByText(/qual o melhor jogo\?/)).toBeInTheDocument();
+    expect(field).toHaveValue('');
+  });
+
+  it('apresenta um anfitrião do elenco no palco', async () => {
+    setup('/palco');
+    await ready();
+    fireEvent.click(await screen.findByRole('button', { name: 'Ver no palco: Patrick Super Saiyajin' }));
+    const stage = screen.getByRole('group', { name: 'Palco: Apresentação' });
+    expect(within(stage).getByRole('img', { name: 'Patrick Super Saiyajin' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Apresentação do anfitrião' })).toBeInTheDocument();
+  });
+});

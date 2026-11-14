@@ -10,6 +10,7 @@ Plataforma de minigames 3D interativos para LIVEs do TikTok. Os espectadores par
 |---|---|
 | Visão geral, Game Hub, Minha arena, Participantes, Personagens, Ranking, Estatísticas, Configurações, Conta, Ajuda | Implementadas, navegáveis e funcionais localmente |
 | Seis jogos | Corrida de obstáculos, chão de lava, batalha de empurrões, batatinha frita, futebol e plataformas desaparecendo: todos jogáveis em 3D, com poderes de presentes, turbo coletivo e classificação |
+| Palco (amostra visual) | Área de conversa falada, sem jogo: seis quadros (perguntas, recados, oráculo, história, tribunal e duelo) com anfitriões que respondem com legenda. **Falas de roteiro, sem IA e sem LIVE.** Os anfitriões são paródias desenhadas por código. Desenho completo em `docs/area-de-conversa.md` |
 | Interação | Presente: XP e pontos pelo valor, poder no jogo e vaga na frente da fila. Curtida: a cada 20, impulso para o personagem de quem curtiu (e vaga na fila aos 50). Quem interage sem ter seguido ganha personagem |
 | Conexão com a LIVE | **Simulada** na demonstração. No modo real, feita por um worker (veja abaixo) |
 | Simulador de eventos | Seguidor, comentário (`!entrar`, `!voto 1/2`), curtidas, presente, compartilhamento, entrada na fila, encerrar LIVE, modo automático |
@@ -107,7 +108,7 @@ Decisões que facilitam trocar o simulador pelo serviço real:
 
 ## O que foi verificado
 
-- 183 testes: regras dos seis jogos (determinismo, término, classificação, casos específicos), motor de eventos, benefícios de presentes e curtidas em todos os jogos, tradução de mensagens da LIVE, camada Supabase com cliente falso, worker com conexão falsa, login e interface.
+- 195 testes: roteiros e funções do Palco, regras dos seis jogos (determinismo, término, classificação, casos específicos), motor de eventos, benefícios de presentes e curtidas em todos os jogos, tradução de mensagens da LIVE, camada Supabase com cliente falso, worker com conexão falsa, login e interface.
 - Segurança do banco: a migração roda em um Postgres real (PGlite) e os testes conferem que um criador só lê o que é dele, que o anônimo não lê tabelas, que o token do overlay é gerado no servidor e que só o worker grava eventos.
 - Escala: com 5.000 participantes, um evento custa cerca de 0,1 ms; 3.000 eventos misturados e mil pessoas comentando `!entrar` são processados dentro dos limites dos testes; o estado enviado ao overlay tem tamanho fixo (cerca de 47 KB) mesmo com 10.000 participantes. No navegador, o painel abre todas as páginas com 5.000 participantes sem erro, e a taxa de quadros da partida foi a mesma de 120 participantes (cerca de 23 quadros por segundo, **medidos com renderização por software, sem GPU**: em um computador comum deve ser bem maior, mas isso não foi medido).
 - Eventos remotos são aplicados em lote (até 10 vezes por segundo) e curtidas do mesmo espectador são somadas no worker, para que mil pessoas interagindo não travem o painel.

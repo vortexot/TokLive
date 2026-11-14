@@ -4,6 +4,7 @@ import {
   CircleUser,
   Gamepad2,
   LayoutDashboard,
+  MicVocal,
   PersonStanding,
   Settings,
   Swords,
@@ -22,6 +23,7 @@ export interface NavItem {
 export const MAIN_NAV: NavItem[] = [
   { to: '/', label: 'Visão geral', icon: LayoutDashboard, end: true },
   { to: '/game-hub', label: 'Game Hub', icon: Gamepad2 },
+  { to: '/palco', label: 'Palco', icon: MicVocal },
   { to: '/arena', label: 'Minha arena', icon: Swords },
   { to: '/participantes', label: 'Participantes', icon: Users },
   { to: '/personagens', label: 'Personagens', icon: PersonStanding },
@@ -48,6 +50,7 @@ export interface PageMeta {
 const TITLES: Record<string, string> = {
   '/': 'Visão geral',
   '/game-hub': 'Game Hub',
+  '/palco': 'Palco',
   '/arena': 'Minha arena',
   '/participantes': 'Participantes',
   '/personagens': 'Personagens',

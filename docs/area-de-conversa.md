@@ -1,6 +1,6 @@
 # Palco: área de conversa falada
 
-> **Estado: proposta.** Nada deste documento está implementado. Ele descreve o desenho das interações, o elenco e como a área encaixa no código atual. Os pontos que dependem de teste estão marcados como "não verificado".
+> **Estado: proposta, com uma amostra visual.** A página **Palco** do painel (`#/palco`) mostra os seis quadros com falas de roteiro e um elenco de paródias (seção 16). Fila real, IA, voz gerada, moderação e overlay ainda não existem. Os pontos que dependem de teste estão marcados como "não verificado".
 
 ## 1. Resumo
 
@@ -524,3 +524,37 @@ O desenho aproveita ideias do repositório `Pablo672-sys/Live-do-Abismo-Thiago-R
 | Atores em pontos do mapa, convidados com voz própria | `config/actors.json`, `Convidados/` | Anfitriões e quadros |
 
 O que o Palco **não** aproveita: o renderizador em vídeo com transmissão direta por RTMP (o TokArena usa overlay no OBS), o XTTS local com GPU como requisito, e o monitor do TikTok próprio (o TokArena já tem o worker).
+
+## 16. Amostra visual (o que já existe no código)
+
+A página **Palco** do painel (`#/palco`, item "Palco" no menu) é uma amostra para ver e mostrar a ideia. Ela não está ligada ao motor de eventos nem à LIVE.
+
+| Parte | Arquivo |
+|---|---|
+| Anfitriões, quadros, roteiros e funções puras (duração da fala, nome falável, resposta de roteiro) | `src/domain/stage.ts` |
+| Desenho dos anfitriões em SVG, com a boca animada | `src/features/stage/HostArt.tsx` |
+| Cena do palco e o tocador de roteiro | `src/features/stage/StageScene.tsx`, `src/features/stage/stage.css` |
+| Página | `src/pages/StagePage.tsx` |
+
+O que a amostra faz:
+
+- Toca em laço o roteiro de cada um dos seis quadros: pedido do espectador, fala com legenda revelada aos poucos, avisos e enquete.
+- Mostra dois anfitriões em cena no Tribunal e no Duelo, com destaque para quem fala.
+- Aceita um pedido digitado ("Testar um pedido") e responde com uma frase pronta do anfitrião.
+- Fala em voz alta com a voz do próprio navegador, se o criador ligar a opção. Não é a voz final.
+- Empilha a cena em telas estreitas, o que serve de primeiro esboço da variante vertical.
+
+### Elenco da amostra
+
+O elenco da amostra **não é o da seção 4**. A pedido do dono do projeto, ele usa paródias que misturam desenhos conhecidos com animes:
+
+| Anfitrião | Mistura | Quadros na amostra |
+|---|---|---|
+| Lula Molusco da Akatsuki | Lula Molusco × Akatsuki | Papo Reto, Tribunal (acusação) |
+| Irmão do Jorel com Sharingan | Irmão do Jorel × Sharingan | Oráculo |
+| Patrick Super Saiyajin | Patrick Estrela × Super Saiyajin | Tribunal (defesa) |
+| Cebolinha do Caderno | Cebolinha × Death Note | História Coletiva, Duelo |
+| Pica-Pau do Chapéu de Palha | Pica-Pau × Chapéu de Palha | Correio Falado, Duelo |
+
+Os desenhos são originais, feitos por código com formas simples. Os personagens parodiados têm dono, e nenhum deles foi licenciado. Isso serve para uma amostra. Para um produto pago, vale o que a seção 4.1 diz: ou licença, ou o elenco de domínio público. Trocar o elenco é trocar a lista `HOSTS` e os desenhos de `HostArt.tsx`; os quadros não dependem de quem está em cena.
+

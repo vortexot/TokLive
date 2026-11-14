@@ -1,0 +1,548 @@
+/* Palco: cena da conversa falada. Tudo dentro do quadro usa `em`, e o tamanho da fonte acompanha
+   a largura do quadro, para a cena ter a mesma composição em qualquer tamanho. */
+
+.pstage {
+  container: pstage / inline-size;
+}
+.pstage__canvas {
+  position: relative;
+  display: grid;
+  grid-template:
+    'top top' auto
+    'cast side' minmax(0, 1fr)
+    'caption caption' auto
+    'foot foot' auto / 40% minmax(0, 1fr);
+  gap: 1em 1.6em;
+  aspect-ratio: 16 / 9;
+  padding: 1.3em 1.6em 1.1em;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  overflow: hidden;
+  font-size: clamp(9px, 1.55cqw, 19px);
+}
+.pstage__canvas--duo {
+  grid-template-columns: 54% minmax(0, 1fr);
+}
+
+.pstage__top {
+  grid-area: top;
+  display: flex;
+  align-items: baseline;
+  gap: 1.2em;
+}
+.pstage__format {
+  font-family: var(--font-display);
+  font-size: 2.3em;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.pstage__cmd {
+  color: var(--text-2);
+  font-size: 1.1em;
+  font-weight: 600;
+}
+.pstage__demo {
+  margin-left: auto;
+  padding: 0.2em 0.7em;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+  color: var(--text-2);
+  font-size: 0.9em;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Elenco em cena */
+.pstage__cast {
+  grid-area: cast;
+  display: flex;
+  gap: 1em;
+  min-height: 0;
+}
+.pstage__host {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding-top: 2.2em;
+  background: var(--plate);
+  /* chanfro das placas não interativas do produto */
+  clip-path: polygon(0 0, calc(100% - 1.5em) 0, 100% 1.5em, 100% 100%, 0 100%);
+  transition: filter var(--dur-2) var(--ease-out);
+}
+.pstage__host.is-waiting {
+  filter: saturate(0.6) brightness(0.7);
+}
+.pstage__host .host {
+  width: 100%;
+  height: 100%;
+}
+.pstage__host figcaption {
+  position: absolute;
+  left: 0.8em;
+  top: 0.6em;
+  display: flex;
+  align-items: center;
+  gap: 0.45em;
+  color: #f5f5f5;
+  font-family: var(--font-display);
+  font-size: 1.15em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.pstage__host.is-speaking figcaption::before {
+  content: '';
+  width: 0.5em;
+  height: 0.5em;
+  border-radius: 50%;
+  background: var(--red);
+}
+
+/* Pedido, aviso e enquete */
+.pstage__side {
+  grid-area: side;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+.pstage-card {
+  padding: 1.1em 1.3em;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-2);
+  animation: pstage-card-in var(--dur-3) var(--ease-out);
+}
+@keyframes pstage-card-in {
+  from {
+    opacity: 0.35;
+    transform: translateY(0.7em);
+  }
+}
+.pstage-card__who {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  color: var(--text-2);
+  font-size: 1.1em;
+  font-weight: 600;
+}
+.pstage-card__who .avatar-plate {
+  flex: none;
+  width: 2.2em !important;
+  height: 2.2em !important;
+}
+.pstage-card__gift {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  margin-left: auto;
+  color: var(--warn);
+  font-size: 0.9em;
+  white-space: nowrap;
+}
+.pstage-card__gift svg {
+  width: 1.1em;
+  height: 1.1em;
+}
+.pstage-card__text {
+  margin-top: 0.6em;
+  font-size: 1.55em;
+  font-weight: 500;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.pstage-card__text b {
+  color: var(--red-ink);
+  font-weight: 600;
+}
+.pstage-notice {
+  display: flex;
+  align-items: center;
+  gap: 0.9em;
+}
+.pstage-notice svg {
+  flex: none;
+  width: 1.7em;
+  height: 1.7em;
+  color: var(--text-2);
+}
+.pstage-notice p {
+  font-size: 1.5em;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.pstage-poll__q {
+  font-size: 1.35em;
+  font-weight: 600;
+}
+.pstage-poll__row {
+  display: grid;
+  grid-template-columns: 1.4em minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 0.2em 0.6em;
+  margin-top: 0.7em;
+  padding-top: 0.7em;
+  border-top: 1px dashed var(--line-strong);
+}
+.pstage-poll__n,
+.pstage-poll__pct {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.pstage-poll__n {
+  color: var(--text-3);
+  font-size: 1.5em;
+}
+.pstage-poll__label {
+  font-size: 1.2em;
+  font-weight: 500;
+}
+.pstage-poll__pct {
+  font-size: 1.7em;
+}
+.pstage-poll__bar {
+  grid-column: 1 / -1;
+  height: 0.45em;
+  background: var(--raised);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.pstage-poll__bar span {
+  display: block;
+  height: 100%;
+  background: var(--text-3);
+}
+.pstage-poll__row.is-lead .pstage-poll__pct,
+.pstage-poll__row.is-lead .pstage-poll__n {
+  color: var(--red-ink);
+}
+.pstage-poll__row.is-lead .pstage-poll__bar span {
+  background: var(--red);
+}
+.pstage-poll__hint {
+  margin-top: 0.9em;
+  color: var(--text-2);
+  font-size: 1em;
+}
+
+/* Legenda da fala */
+.pstage__caption {
+  grid-area: caption;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: 1em;
+  min-height: 6.6em;
+  padding: 0.9em 1.2em;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+}
+.pstage__caption.is-empty {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+}
+.pstage__speaker {
+  color: var(--red-ink);
+  font-family: var(--font-display);
+  font-size: 1.3em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.pstage__caption p {
+  font-size: 1.45em;
+  font-weight: 500;
+  line-height: 1.35;
+}
+.pstage__ghost {
+  color: transparent;
+  user-select: none;
+}
+.pstage__caption .pstage__wait {
+  color: var(--text-3);
+  font-size: 1.15em;
+  font-weight: 400;
+}
+
+.pstage__foot {
+  grid-area: foot;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.3em 1em;
+  color: var(--text-2);
+  font-size: 1.05em;
+  font-weight: 600;
+}
+.pstage__next-label {
+  color: var(--text-3);
+  font-family: var(--font-display);
+  font-size: 1.1em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.pstage__next-none {
+  color: var(--text-3);
+  font-weight: 400;
+}
+
+/* Quadro estreito (celular): a cena empilha, como na tela vertical da LIVE */
+@container pstage (max-width: 560px) {
+  .pstage__canvas,
+  .pstage__canvas--duo {
+    grid-template:
+      'top' auto
+      'cast' auto
+      'side' auto
+      'caption' auto
+      'foot' auto / minmax(0, 1fr);
+    aspect-ratio: auto;
+    font-size: clamp(9px, 3cqw, 15px);
+  }
+  .pstage__top {
+    flex-wrap: wrap;
+    gap: 0.4em 1em;
+  }
+  .pstage__format,
+  .pstage__cmd {
+    white-space: nowrap;
+  }
+  .pstage__cast {
+    aspect-ratio: 16 / 11;
+  }
+  .pstage__side {
+    min-height: 9em;
+  }
+}
+
+/* Anfitriões: a boca abre e fecha enquanto a fala toca */
+.host {
+  display: block;
+}
+.host-mouth {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scaleY(0.3);
+}
+.host--speaking .host-mouth {
+  animation: host-talk 280ms ease-in-out infinite alternate;
+}
+.host--speaking .host-jaw {
+  animation: host-jaw 280ms ease-in-out infinite alternate;
+}
+@keyframes host-talk {
+  from {
+    transform: scaleY(0.25);
+  }
+  to {
+    transform: scaleY(1.05);
+  }
+}
+@keyframes host-jaw {
+  to {
+    transform: rotate(13deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .host--speaking .host-mouth {
+    transform: scaleY(1);
+  }
+  .host--speaking .host-jaw {
+    transform: rotate(10deg);
+  }
+}
+
+/* ---------- Página do Palco ---------- */
+.palco {
+  display: grid;
+  gap: var(--s-5);
+}
+.palco__note {
+  max-width: 75ch;
+  color: var(--text-2);
+}
+.palco__stage {
+  /* ao rolar até o palco, ele não fica escondido sob o cabeçalho fixo */
+  scroll-margin-top: calc(var(--header-h) + var(--s-4));
+}
+.palco__main {
+  display: grid;
+  grid-template-columns: minmax(0, 2.2fr) minmax(17rem, 1fr);
+  gap: var(--s-5);
+  align-items: start;
+}
+.palco__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+  margin-top: var(--s-3);
+}
+.palco__voice {
+  flex: 1 1 18rem;
+  margin-left: auto;
+  max-width: 26rem;
+}
+.palco__try {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: var(--s-2);
+  margin-top: var(--s-4);
+  padding-top: var(--s-4);
+  border-top: 1px dashed var(--line-strong);
+}
+.palco__try .btn {
+  height: 40px;
+}
+.palco__try-hint {
+  grid-column: 1 / -1;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+
+.palco-info__body {
+  display: grid;
+  gap: var(--s-4);
+  padding: var(--s-4);
+}
+.palco-info__summary {
+  color: var(--text-2);
+}
+.palco-info__steps {
+  counter-reset: step;
+}
+.palco-info__steps li {
+  display: grid;
+  grid-template-columns: 1.6rem minmax(0, 1fr);
+  align-items: baseline;
+  padding: var(--s-2) 0;
+  counter-increment: step;
+}
+.palco-info__steps li + li {
+  border-top: 1px dashed var(--line-strong);
+}
+.palco-info__steps li::before {
+  content: counter(step);
+  color: var(--text-3);
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.palco-info__label {
+  margin-bottom: var(--s-1);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+.palco__section-title {
+  margin-top: var(--s-5);
+  font-size: var(--fs-xl);
+  font-weight: 700;
+}
+.palco__section-sub {
+  max-width: 75ch;
+  margin-top: var(--s-1);
+  color: var(--text-2);
+}
+.cast-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12.5rem, 1fr));
+  gap: var(--s-4);
+  margin-top: var(--s-4);
+}
+.cast-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  overflow: hidden;
+  transition: border-color var(--dur-2) var(--ease-out);
+}
+.cast-card:hover {
+  border-color: var(--line-strong);
+}
+.cast-card--on {
+  border-color: var(--red-deep);
+}
+.cast-card__art {
+  position: relative;
+  aspect-ratio: 5 / 4;
+  background: var(--plate);
+  clip-path: polygon(0 0, calc(100% - var(--notch)) 0, 100% var(--notch), 100% 100%, 0 100%);
+}
+.cast-card__art .host {
+  position: absolute;
+  inset: var(--s-3) 0 0;
+  width: 100%;
+  height: calc(100% - var(--s-3));
+}
+.cast-card__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-4);
+}
+.cast-card__name {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+}
+.cast-card__mix {
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+}
+.cast-card__text {
+  color: var(--text-2);
+}
+.cast-card__voice {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+.cast-card__voice svg {
+  flex: none;
+  color: var(--text-3);
+}
+.cast-card__actions {
+  margin-top: auto;
+  padding-top: var(--s-2);
+}
+
+/* Apresentação do anfitrião, no lugar do pedido */
+.pstage-bio__name {
+  font-family: var(--font-display);
+  font-size: 2.1em;
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.pstage-bio__mix {
+  margin-top: 0.4em;
+  color: var(--text-2);
+  font-size: 1.2em;
+}
+
+@container page (max-width: 980px) {
+  .palco__main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
